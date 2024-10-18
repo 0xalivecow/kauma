@@ -4,7 +4,7 @@ use base64::prelude::*;
 pub fn get_alpha_rep(num: u128) -> String {
     let mut powers: Vec<u32> = vec![];
 
-    for shift in 0..127 {
+    for shift in 0..128 {
         //println!("{:?}", ((num >> shift) & 1));
         if (((num >> shift) & 1) == 1) {
             println!("Shift success");
@@ -29,7 +29,7 @@ pub fn get_alpha_rep(num: u128) -> String {
 pub fn get_bit_indices_from_byte(byte: u8) -> Vec<u8> {
     let mut coefficients: Vec<u8> = vec![];
     
-    for shift in 0..7 {
+    for shift in 0..8 {
         if ((byte >> shift) & 1) == 1 {
             coefficients.push(shift);
         }
