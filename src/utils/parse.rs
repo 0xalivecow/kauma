@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Serialize, Deserialize)]
 pub struct Testcases {
@@ -9,12 +10,5 @@ pub struct Testcases {
 pub struct Testcase {
     uuid: String,
     action: String,
-    arguments: Vec<Argument>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Argument {
-    uuid: String,
-    action: String,
-    arguments: Vec<Argument>,
+    arguments: Value,
 }

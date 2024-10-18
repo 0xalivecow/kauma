@@ -1,2 +1,2 @@
-mod parse;
-mod poly;
+pub mod parse;
+pub mod poly;
