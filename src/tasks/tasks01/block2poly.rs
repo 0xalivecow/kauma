@@ -1,6 +1,6 @@
 use std::{str::Bytes, string};
 
-use crate::utils::poly;
+use crate::utils::poly::{self, get_coefficients};
 use anyhow::Result;
 use base64::prelude::*;
 use serde_json::Value;
@@ -16,15 +16,7 @@ pub fn block2poly(val: &Value) -> Result<Vec<u8>> {
     bytes.copy_from_slice(&decoded);
     let number: u128 = <u128>::from_ne_bytes(bytes);
 
-    let mut coefficients: Vec<u8> = vec![];
-
-    for shift in 0..128 {
-        //println!("{:?}", ((num >> shift) & 1));
-        if ((number >> shift) & 1) == 1 {
-            println!("Shift success");
-            coefficients.push(shift);
-        }
-    }
+    let coefficients: Vec<u8> = get_coefficients(number);
 
     Ok(coefficients)
 }

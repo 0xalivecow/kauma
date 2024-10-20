@@ -1,16 +1,9 @@
-use std::{fmt::format, str::FromStr, u128, u8};
 use base64::prelude::*;
+use std::{fmt::format, str::FromStr, u128, u8};
 
 pub fn get_alpha_rep(num: u128) -> String {
-    let mut powers: Vec<u32> = vec![];
+    let powers: Vec<u8> = get_coefficients(num);
 
-    for shift in 0..128 {
-        //println!("{:?}", ((num >> shift) & 1));
-        if (((num >> shift) & 1) == 1) {
-            println!("Shift success");
-            powers.push(shift);
-        }
-    }
     //println!("{:?}", powers);
 
     let mut alpha_rep = String::new();
@@ -26,9 +19,21 @@ pub fn get_alpha_rep(num: u128) -> String {
     alpha_rep
 }
 
+pub fn get_coefficients(num: u128) -> Vec<u8> {
+    let mut powers: Vec<u8> = vec![];
+    for shift in 0..128 {
+        //println!("{:?}", ((num >> shift) & 1));
+        if ((num >> shift) & 1) == 1 {
+            println!("Shift success");
+            powers.push(shift);
+        }
+    }
+    powers
+}
+
 pub fn get_bit_indices_from_byte(byte: u8) -> Vec<u8> {
     let mut coefficients: Vec<u8> = vec![];
-    
+
     for shift in 0..8 {
         if ((byte >> shift) & 1) == 1 {
             coefficients.push(shift);
@@ -38,15 +43,14 @@ pub fn get_bit_indices_from_byte(byte: u8) -> Vec<u8> {
     coefficients
 }
 
-pub fn coefficient_to_binary(coefficients: Vec<u8>) -> u128{
+pub fn coefficient_to_binary(coefficients: Vec<u8>) -> u128 {
     let mut binary_number: u128 = 0;
     for coeff in coefficients {
-        binary_number = binary_number | (1<<coeff);
+        binary_number = binary_number | (1 << coeff);
     }
 
     binary_number
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -79,6 +83,9 @@ mod tests {
         let coefficients: Vec<u8> = vec![12, 127, 9, 0];
         let b64: &str = "ARIAAAAAAAAAAAAAAAAAgA==";
         let calculated_num: u128 = coefficient_to_binary(coefficients);
-        assert_eq!(BASE64_STANDARD.encode(calculated_num.to_ne_bytes()), "ARIAAAAAAAAAAAAAAAAAgA==");
+        assert_eq!(
+            BASE64_STANDARD.encode(calculated_num.to_ne_bytes()),
+            "ARIAAAAAAAAAAAAAAAAAgA=="
+        );
     }
 }

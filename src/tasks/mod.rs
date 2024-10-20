@@ -33,7 +33,7 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
         }
         "block2poly" => {
             let result: Vec<u8> = block2poly(args)?;
-            let json = json!({"block" : result});
+            let json = json!({"coefficients" : result});
             Ok(json)
         }
         _ => Err(anyhow!("Fatal. No compatible action found")),
