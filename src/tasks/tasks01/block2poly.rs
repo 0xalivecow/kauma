@@ -1,11 +1,17 @@
-use std::str::Bytes;
+use std::{str::Bytes, string};
 
 use crate::utils::poly;
+use anyhow::Result;
 use base64::prelude::*;
+use serde_json::Value;
 
-fn block2poly(block: &str) -> Vec<u8> {
+pub fn block2poly(val: &Value) -> Result<Vec<u8>> {
     // Convert JSON data in to a u128
-    let decoded: Vec<u8> = BASE64_STANDARD.decode(block).unwrap();
+    // TODO: Transfer decoding into own function?
+    eprintln!("Decoded is: {:?}", val["block"]);
+    let string: String = serde_json::from_value(val["block"].clone())?;
+    let decoded: Vec<u8> = BASE64_STANDARD.decode(string)?;
+
     let mut bytes: [u8; 16] = [0u8; 16];
     bytes.copy_from_slice(&decoded);
     let number: u128 = <u128>::from_ne_bytes(bytes);
@@ -14,39 +20,34 @@ fn block2poly(block: &str) -> Vec<u8> {
 
     for shift in 0..128 {
         //println!("{:?}", ((num >> shift) & 1));
-        if (((number >> shift) & 1) == 1) {
+        if ((number >> shift) & 1) == 1 {
             println!("Shift success");
             coefficients.push(shift);
         }
     }
 
-    //Legacy code. 
-    // TODO: Remove
-    /*
-    let mut counter: u8 = 0;
-    let mut coefficients: Vec<u8> = vec![];
-    for blk in decoded {
-        let indices: Vec<u8> = poly::get_bit_indices_from_byte(blk);
-        for index in indices {
-            coefficients.push(counter*8+index);
-        }
-        counter += 1;
-    }
-    */
-    coefficients
+    Ok(coefficients)
 }
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
     use std::str::FromStr;
 
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
     #[test]
-    fn block2poly_task01() {
-        let block: &str = "ARIAAAAAAAAAAAAAAAAAgA==";
+    fn block2poly_task01() -> Result<()> {
+        let block: Value = json!({"block" : "ARIAAAAAAAAAAAAAAAAAgA=="});
         let coefficients: Vec<u8> = vec![0, 9, 12, 127];
-        assert_eq!(block2poly(block), coefficients);
+        assert_eq!(
+            block2poly(&block)?,
+            coefficients,
+            "Coefficients were: {:?}",
+            block2poly(&block)?
+        );
+
+        Ok(())
     }
 }

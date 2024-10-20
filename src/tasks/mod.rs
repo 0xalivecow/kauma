@@ -5,14 +5,18 @@ use std::{
 };
 
 use crate::utils::parse::{Responses, Testcase, Testcases};
-use tasks01::poly2block::{self, poly2block};
+use tasks01::{
+    block2poly::block2poly,
+    poly2block::{self, poly2block},
+};
 
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 mod tasks01;
 
-pub fn task_deploy(testcase: &Testcase) -> Result<Value, String> {
+pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
     /*
      * Function to automatially distribute task workloads
      * TODO: Add functionality to also pass semantics
@@ -27,10 +31,12 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value, String> {
             let json = json!({"block" : result});
             Ok(json)
         }
-        _ => Err(format!(
-            "Fatal error in task distribution. Data was: {:?}",
-            args
-        )),
+        "block2poly" => {
+            let result: Vec<u8> = block2poly(args)?;
+            let json = json!({"block" : result});
+            Ok(json)
+        }
+        _ => Err(anyhow!("Fatal. No compatible action found")),
     }
 }
 
