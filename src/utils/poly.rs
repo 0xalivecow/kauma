@@ -1,4 +1,6 @@
+use anyhow::Result;
 use base64::prelude::*;
+use serde_json::Value;
 use std::{fmt::format, str::FromStr, u128, u8};
 
 pub fn get_alpha_rep(num: u128) -> String {
@@ -17,6 +19,17 @@ pub fn get_alpha_rep(num: u128) -> String {
     }
 
     alpha_rep
+}
+
+pub fn block_2_number(string: String) -> Result<u128> {
+    //let string: String = serde_json::from_value(val["block"].clone())?;
+    let decoded: Vec<u8> = BASE64_STANDARD.decode(string)?;
+
+    let mut bytes: [u8; 16] = [0u8; 16];
+    bytes.copy_from_slice(&decoded);
+    let number: u128 = <u128>::from_ne_bytes(bytes);
+
+    Ok(number)
 }
 
 pub fn get_coefficients(num: u128) -> Vec<u8> {

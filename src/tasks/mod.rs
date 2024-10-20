@@ -33,6 +33,7 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
         }
         "block2poly" => {
             let result: Vec<u8> = block2poly(args)?;
+            //TODO: Sort Coefficients
             let json = json!({"coefficients" : result});
             Ok(json)
         }
