@@ -1,2 +1,3 @@
-mod poly2block;
-mod block2poly;
+pub mod block2poly;
+pub mod poly2block;
+
