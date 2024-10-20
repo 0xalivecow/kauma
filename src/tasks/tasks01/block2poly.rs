@@ -8,7 +8,6 @@ use serde_json::Value;
 pub fn block2poly(val: &Value) -> Result<Vec<u8>> {
     // Convert JSON data in to a u128
     // TODO: Transfer decoding into own function?
-    eprintln!("Decoded is: {:?}", val["block"]);
     let string: String = serde_json::from_value(val["block"].clone())?;
     let decoded: Vec<u8> = BASE64_STANDARD.decode(string)?;
 

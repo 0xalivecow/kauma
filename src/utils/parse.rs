@@ -24,25 +24,6 @@ pub fn parse_json(json: String) -> Result<Testcases> {
     Ok(deserialised)
 }
 
-/*
-pub fn generate_response_payload(
-    testcase_id: String,
-    payload: Value,
-) -> Result<HashMap<String, Value>> {
-    let mut hashmap = HashMap::new();
-    hashmap.insert(testcase_id, payload);
-    Ok(hashmap)
-}
-
-pub fn generate_response(payloads: HashMap<String, Value>) -> Result<Value> {
-    let response: Responses = Responses {
-        responses: payloads,
-    };
-
-    Ok(serde_json::to_value(response).unwrap())
-}
-*/
-
 #[cfg(test)]
 mod tests {
     use std::fs;
@@ -104,6 +85,8 @@ mod tests {
             testcase_1.action
         );
     }
+
+    // TODO: Reactivate tests
     /*
     #[test]
     fn test_response_payload_generation() {
