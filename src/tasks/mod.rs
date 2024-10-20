@@ -23,16 +23,7 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value, String> {
 
     match testcase.action.as_str() {
         "poly2block" => {
-            let coefficients: Vec<u8> = args["coefficients"]
-                .as_array()
-                .unwrap()
-                .into_iter()
-                .map(|x| x.as_u64().unwrap() as u8)
-                .collect();
-            //eprintln!("{:?}", &args["coefficients"]);
-            //eprintln!("{:?}", testcase);
-            //eprintln!("{:?}", coefficients);
-            let result = poly2block(coefficients);
+            let result = poly2block(args);
             let json = json!({"block" : result});
             Ok(json)
         }
@@ -43,7 +34,6 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value, String> {
     }
 }
 
-// TODO: Is this obsolete? Might delete later.
 pub fn task_distrubute(testcases: &Testcases) -> Responses {
     let mut responses: HashMap<String, Value> = HashMap::new();
 
