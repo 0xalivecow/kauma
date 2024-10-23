@@ -1,4 +1,4 @@
-use crate::utils::poly::{self, coefficient_to_binary};
+use crate::utils::poly::{self};
 use base64::prelude::*;
 use serde_json::Value;
 

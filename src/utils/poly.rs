@@ -1,6 +1,6 @@
 use anyhow::Result;
 use base64::prelude::*;
-use std::{fmt::format, str::FromStr, u128, u8};
+use std::{str::FromStr, u128, u8};
 
 pub fn get_alpha_rep(num: u128) -> String {
     let powers: Vec<u8> = get_coefficients(num);

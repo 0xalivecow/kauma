@@ -1,8 +1,6 @@
-use std::{str::Bytes, string};
 
-use crate::utils::poly::{self, b64_2_num, get_coefficients};
+use crate::utils::poly::{b64_2_num, get_coefficients};
 use anyhow::Result;
-use base64::prelude::*;
 use serde_json::Value;
 
 pub fn block2poly(val: &Value) -> Result<Vec<u8>> {

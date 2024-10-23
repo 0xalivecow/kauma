@@ -2,10 +2,7 @@ use anyhow::{anyhow, Result};
 use base64::prelude::*;
 use serde_json::Value;
 
-use crate::utils::{
-    ciphers::{sea_128_decrypt, sea_128_encrypt},
-    poly::b64_2_num,
-};
+use crate::utils::ciphers::{sea_128_decrypt, sea_128_encrypt};
 
 pub fn sea128(args: &Value) -> Result<String> {
     let key_string: String = serde_json::from_value(args["key"].clone())?;
