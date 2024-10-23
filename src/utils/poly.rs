@@ -1,7 +1,7 @@
 use anyhow::Result;
 use base64::prelude::*;
-use serde_json::Value;
-use std::{fmt::format, str::FromStr, u128, u8};
+
+use std::{str::FromStr, u128, u8};
 
 pub fn get_alpha_rep(num: u128) -> String {
     let powers: Vec<u8> = get_coefficients(num);
@@ -21,8 +21,7 @@ pub fn get_alpha_rep(num: u128) -> String {
     alpha_rep
 }
 
-pub fn block_2_number(string: String) -> Result<u128> {
-    //let string: String = serde_json::from_value(val["block"].clone())?;
+pub fn b64_2_num(string: &String) -> Result<u128> {
     let decoded: Vec<u8> = BASE64_STANDARD.decode(string)?;
 
     let mut bytes: [u8; 16] = [0u8; 16];
@@ -67,6 +66,8 @@ pub fn coefficient_to_binary(coefficients: Vec<u8>) -> u128 {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::poly::b64_2_num;
+    use anyhow::Result;
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
@@ -100,5 +101,18 @@ mod tests {
             BASE64_STANDARD.encode(calculated_num.to_ne_bytes()),
             "ARIAAAAAAAAAAAAAAAAAgA=="
         );
+    }
+
+    #[test]
+    fn test_b64_2_num() -> Result<()> {
+        let b64_payload: String = String::from_str("juMqbhnlBwAAAAAAAAAAAA==")?;
+        assert_eq!(
+            b64_2_num(&b64_payload)?,
+            2222222222222222,
+            "Error: Value was: {}",
+            b64_2_num(&b64_payload)?
+        );
+
+        Ok(())
     }
 }

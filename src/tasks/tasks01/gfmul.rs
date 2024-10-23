@@ -2,7 +2,7 @@ use anyhow::Result;
 use base64::prelude::*;
 use serde_json::Value;
 
-use crate::utils::poly::{block_2_number, coefficient_to_binary};
+use crate::utils::poly::{b64_2_num, coefficient_to_binary};
 
 pub fn gfmul(args: &Value) -> Result<String> {
     eprintln!("{args}");
@@ -11,8 +11,8 @@ pub fn gfmul(args: &Value) -> Result<String> {
     let red_poly_num: u128 = coefficient_to_binary(reduction_polynomial_coeffs);
     //eprintln!("{:?}", serde_json::from_value(args["a"].clone())?);
 
-    let mut poly1: u128 = block_2_number(serde_json::from_value(args["a"].clone())?)?;
-    let poly2: u128 = block_2_number(serde_json::from_value(args["b"].clone())?)?;
+    let mut poly1: u128 = b64_2_num(&serde_json::from_value(args["a"].clone())?)?;
+    let poly2: u128 = b64_2_num(&serde_json::from_value(args["b"].clone())?)?;
     eprintln!("poly1 is: {}", poly1);
     eprintln!("poly2 is: {}", poly2);
     /* Begin of magic algorithm

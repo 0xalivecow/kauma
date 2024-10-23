@@ -1,17 +1,13 @@
-use std::{
-    collections::HashMap,
-    fmt::format,
-    io::{self, Error, ErrorKind},
-};
+use std::collections::HashMap;
 
 use crate::utils::parse::{Responses, Testcase, Testcases};
 use tasks01::{
     block2poly::block2poly,
-    poly2block::{self, poly2block},
+    poly2block::{poly2block},
+    sea128::sea128,
 };
 
 use anyhow::{anyhow, Result};
-use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 mod tasks01;
@@ -35,6 +31,11 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
             let result: Vec<u8> = block2poly(args)?;
             //TODO: Sort Coefficients
             let json = json!({"coefficients" : result});
+            Ok(json)
+        }
+        "sea128" => {
+            let result = sea128(args)?;
+            let json = json!({"output" : result});
             Ok(json)
         }
         _ => Err(anyhow!("Fatal. No compatible action found")),
@@ -81,6 +82,28 @@ mod tests {
         let parsed = parse_json(json).unwrap();
 
         let expected = json!({ "responses": { "b856d760-023d-4b00-bad2-15d2b6da22fe": {"block": "ARIAAAAAAAAAAAAAAAAAgA=="}}});
+
+        assert_eq!(
+            serde_json::to_value(task_distrubute(&parsed)).unwrap(),
+            serde_json::to_value(expected).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_task_sea128_task_full() {
+        let json = fs::read_to_string("src/test_json/sea128.json").unwrap();
+        let parsed = parse_json(json).unwrap();
+
+        let expected = json!({
+            "responses": {
+                "b856d760-023d-4b00-bad2-15d2b6da22fe": {
+                "output": "D5FDo3iVBoBN9gVi9/MSKQ=="
+            },
+            "254eaee7-05fd-4e0d-8292-9b658a852245": {
+            "output": "yv66vvrO263eyviIiDNEVQ=="
+            }
+            }
+        });
 
         assert_eq!(
             serde_json::to_value(task_distrubute(&parsed)).unwrap(),
