@@ -1,3 +1,5 @@
+use std::io::BufRead;
+
 use anyhow::Result;
 use openssl::symm::{Cipher, Crypter, Mode};
 
@@ -49,6 +51,14 @@ pub fn sea_128_decrypt(key: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
 
     let intermediate = xor_bytes(input, xor_val.to_be_bytes().to_vec())?;
     Ok(aes_128_decrypt(&key, &intermediate)?)
+}
+
+pub fn xex_encrypt(mut key: Vec<u8>, tweak: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
+    let key_parts: Vec<u8> = key.split_off(128);
+    let key1 = key_parts[0];
+    let key2 = key_parts[1];
+
+    todo!();
 }
 
 /*
