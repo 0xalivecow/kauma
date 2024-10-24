@@ -1,11 +1,7 @@
 use std::collections::HashMap;
 
 use crate::utils::parse::{Responses, Testcase, Testcases};
-use tasks01::{
-    block2poly::block2poly,
-    poly2block::{poly2block},
-    sea128::sea128,
-};
+use tasks01::{block2poly::block2poly, poly2block::poly2block, sea128::sea128};
 
 use anyhow::{anyhow, Result};
 use serde_json::{json, Value};
@@ -38,20 +34,24 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
             let json = json!({"output" : result});
             Ok(json)
         }
-        _ => Err(anyhow!("Fatal. No compatible action found")),
+        _ => Err(anyhow!(
+            "Fatal. No compatible action found. Json data was {:?}. Arguments were; {:?}",
+            testcase,
+            args
+        )),
     }
 }
 
-pub fn task_distrubute(testcases: &Testcases) -> Responses {
+pub fn task_distrubute(testcases: &Testcases) -> Result<Responses> {
     let mut responses: HashMap<String, Value> = HashMap::new();
 
     for (id, testcase) in &testcases.testcases {
         responses.insert(id.to_owned(), task_deploy(testcase).unwrap());
     }
 
-    Responses {
+    Ok(Responses {
         responses: responses,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -77,20 +77,22 @@ mod tests {
     }
 
     #[test]
-    fn test_task_distribution() {
+    fn test_task_distribution() -> Result<()> {
         let json = fs::read_to_string("src/test_json/poly2block_example.json").unwrap();
         let parsed = parse_json(json).unwrap();
 
         let expected = json!({ "responses": { "b856d760-023d-4b00-bad2-15d2b6da22fe": {"block": "ARIAAAAAAAAAAAAAAAAAgA=="}}});
 
         assert_eq!(
-            serde_json::to_value(task_distrubute(&parsed)).unwrap(),
+            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
             serde_json::to_value(expected).unwrap()
         );
+
+        Ok(())
     }
 
     #[test]
-    fn test_task_sea128_task_full() {
+    fn test_task_sea128_task_full() -> Result<()> {
         let json = fs::read_to_string("src/test_json/sea128.json").unwrap();
         let parsed = parse_json(json).unwrap();
 
@@ -106,8 +108,10 @@ mod tests {
         });
 
         assert_eq!(
-            serde_json::to_value(task_distrubute(&parsed)).unwrap(),
+            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
             serde_json::to_value(expected).unwrap()
         );
+
+        Ok(())
     }
 }
