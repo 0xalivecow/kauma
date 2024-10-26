@@ -1,20 +1,38 @@
 use anyhow::Result;
 use base64::prelude::*;
+//use num_bigint::{BigUint, ToBigUint};
 use serde_json::Value;
 
-use crate::utils::poly::{b64_2_num, coefficient_to_binary};
+use crate::utils::{
+    math::ByteArray,
+    poly::{b64_2_num, coefficient_to_binary},
+};
+
+pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
 pub fn gfmul(args: &Value) -> Result<String> {
     eprintln!("{args}");
     // Generate reduction polynomial
-    let reduction_polynomial_coeffs: Vec<u8> = vec![7, 2, 1, 0];
-    let red_poly_num: u128 = 340282366920938463463374607431768211591; //coefficient_to_binary(reduction_polynomial_coeffs);
-                                                                      //eprintln!("{:?}", serde_json::from_value(args["a"].clone())?);
+    let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
+    eprintln!("Before push  {:01X?}", red_poly_bytes);
+    red_poly_bytes.0.push(0x01);
+    //red_poly_bytes.0.reverse();
+    eprintln!("After push  {:01X?}", red_poly_bytes);
+    //let red_poly_num = ; //coefficient_to_binary(reduction_polynomial_coeffs);
+    //eprintln!("{:?}", serde_json::from_value(args["a"].clone())?);
 
-    let mut poly1: u128 = b64_2_num(&serde_json::from_value(args["a"].clone())?)?;
-    let poly2: u128 = b64_2_num(&serde_json::from_value(args["b"].clone())?)?;
-    eprintln!("poly1 is: {}", poly1);
-    eprintln!("poly2 is: {}", poly2);
+    let poly1_text: String = serde_json::from_value(args["a"].clone())?;
+    let mut poly1: ByteArray = ByteArray(BASE64_STANDARD.decode(poly1_text)?);
+    poly1.0.push(0x00);
+    //poly1.0.reverse();
+
+    let poly2_text: String = serde_json::from_value(args["b"].clone())?;
+    let mut poly2: ByteArray = ByteArray(BASE64_STANDARD.decode(poly2_text)?);
+    poly2.0.push(0x00);
+    //poly2.0.reverse();
+
+    eprintln!("poly1 is: {:01X?}", poly1);
+    eprintln!("poly2 is: {:01X?}", poly2);
 
     /* Begin of magic algorithm
      *  poly1 = a = X = V ???
@@ -22,26 +40,51 @@ pub fn gfmul(args: &Value) -> Result<String> {
      *  result = Z
      */
 
-    let mut result: u128 = 0;
+    let mut result: ByteArray = ByteArray(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
-    if ((poly2 >> 1) & 1) == 1 {
-        eprintln!("ALHIGLIWhlighliwfhlihliawfhliawfhli");
-        result ^= poly1;
+    if poly2.LSB_is_one() {
+        result.xor_byte_arrays(&poly1);
     }
 
-    for i in 2..128 {
-        if ((poly2 >> i) & 1) == 1 {
-            poly1 = (poly1 << 1) ^ red_poly_num;
-            result ^= poly1;
+    while !poly2.is_empty() {
+        if !poly2.LSB_is_one() {
+            poly1.left_shift();
+            poly1.xor_byte_arrays(&red_poly_bytes);
+            eprintln!("Poly1 after reduction: {:01X?}", poly1);
+            result.xor_byte_arrays(&poly1);
+            eprintln!(
+                "LSB was one; \n 
+                    poly1 is {:01X?}; \n
+                    poly2 is {:01X?}; \n
+                    result is: {:01X?}",
+                poly1.0, poly2.0, result.0
+            )
         } else {
-            poly1 = (poly1 << 1) ^ red_poly_num;
+            poly1.left_shift();
+            poly1.xor_byte_arrays(&red_poly_bytes);
+            eprintln!(
+                "LSB was 0; \n
+                    poly1 is {:01X?}; \n
+                    poly2 is {:01X?}; \n
+                    result is: {:01X?}",
+                poly1.0, poly2.0, result.0
+            )
         }
+        poly2.right_shift();
     }
+    //result.xor_byte_arrays(&red_poly_bytes);
+    //result.xor_byte_arrays(&red_poly_bytes);
+    eprintln!("Result after last red {:01X?}", &result.0);
 
-    poly1 = (poly1 << 1) ^ red_poly_num;
-    result ^= poly1;
+    eprintln!(
+        "Should be: {:01X?}",
+        ByteArray(BASE64_STANDARD.decode("hSQAAAAAAAAAAAAAAAAAAA==")?)
+    );
+    result.0.remove(16);
+    let mut bytes: [u8; 16] = [0u8; 16];
+    bytes.copy_from_slice(&result.0);
 
-    Ok(BASE64_STANDARD.encode(result.to_ne_bytes()))
+    Ok(BASE64_STANDARD.encode(bytes))
 }
 
 #[cfg(test)]
