@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::utils::parse::{Responses, Testcase, Testcases};
-use tasks01::{block2poly::block2poly, poly2block::poly2block, sea128::sea128};
+use tasks01::{block2poly::block2poly, gfmul::gfmul, poly2block::poly2block, sea128::sea128};
 
 use anyhow::{anyhow, Result};
 use serde_json::{json, Value};
@@ -32,6 +32,11 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
         "sea128" => {
             let result = sea128(args)?;
             let json = json!({"output" : result});
+            Ok(json)
+        }
+        "gfmul" => {
+            let result = gfmul(args)?;
+            let json = json!({"product" : result});
             Ok(json)
         }
         _ => Err(anyhow!(
