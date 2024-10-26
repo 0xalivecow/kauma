@@ -119,4 +119,19 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_task_gfmul_full() -> Result<()> {
+        let json = fs::read_to_string("src/test_json/gfmul_test.json").unwrap();
+        let parsed = parse_json(json).unwrap();
+
+        let expected = json!({ "responses": { "b856d760-023d-4b00-bad2-15d2b6da22fe": {"product": "hSQAAAAAAAAAAAAAAAAAAA=="}}});
+
+        assert_eq!(
+            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(expected).unwrap()
+        );
+
+        Ok(())
+    }
 }

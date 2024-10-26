@@ -12,33 +12,20 @@ pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
 pub fn gfmul(args: &Value) -> Result<String> {
     eprintln!("{args}");
-    // Generate reduction polynomial
+
     let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
-    eprintln!("Before push  {:01X?}", red_poly_bytes);
     red_poly_bytes.0.push(0x01);
-    //red_poly_bytes.0.reverse();
-    eprintln!("After push  {:01X?}", red_poly_bytes);
-    //let red_poly_num = ; //coefficient_to_binary(reduction_polynomial_coeffs);
-    //eprintln!("{:?}", serde_json::from_value(args["a"].clone())?);
 
     let poly1_text: String = serde_json::from_value(args["a"].clone())?;
     let mut poly1: ByteArray = ByteArray(BASE64_STANDARD.decode(poly1_text)?);
     poly1.0.push(0x00);
-    //poly1.0.reverse();
 
     let poly2_text: String = serde_json::from_value(args["b"].clone())?;
     let mut poly2: ByteArray = ByteArray(BASE64_STANDARD.decode(poly2_text)?);
     poly2.0.push(0x00);
-    //poly2.0.reverse();
 
     eprintln!("poly1 is: {:01X?}", poly1);
     eprintln!("poly2 is: {:01X?}", poly2);
-
-    /* Begin of magic algorithm
-     *  poly1 = a = X = V ???
-     *  poly2 = b
-     *  result = Z
-     */
 
     let mut result: ByteArray = ByteArray(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
@@ -75,14 +62,7 @@ pub fn gfmul(args: &Value) -> Result<String> {
         }
         poly2.right_shift();
     }
-    //result.xor_byte_arrays(&red_poly_bytes);
-    //result.xor_byte_arrays(&red_poly_bytes);
-    eprintln!("Result after last red {:01X?}", &result.0);
 
-    eprintln!(
-        "Should be: {:01X?}",
-        ByteArray(BASE64_STANDARD.decode("hSQAAAAAAAAAAAAAAAAAAA==")?)
-    );
     result.0.remove(16);
     let mut bytes: [u8; 16] = [0u8; 16];
     bytes.copy_from_slice(&result.0);
