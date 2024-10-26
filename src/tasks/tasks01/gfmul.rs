@@ -44,10 +44,13 @@ pub fn gfmul(args: &Value) -> Result<String> {
 
     if poly2.LSB_is_one() {
         result.xor_byte_arrays(&poly1);
+        poly2.right_shift();
+    } else {
+        poly2.right_shift();
     }
 
     while !poly2.is_empty() {
-        if !poly2.LSB_is_one() {
+        if poly2.LSB_is_one() {
             poly1.left_shift();
             poly1.xor_byte_arrays(&red_poly_bytes);
             eprintln!("Poly1 after reduction: {:01X?}", poly1);

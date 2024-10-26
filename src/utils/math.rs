@@ -69,9 +69,22 @@ mod tests {
 
     #[test]
     fn test_byte_array_shift2() {
-        let mut byte_array: ByteArray = ByteArray(vec![0x00, 0xFF]);
-        let shifted_array: ByteArray = ByteArray(vec![0x01, 0xFE]);
+        let mut byte_array: ByteArray = ByteArray(vec![0xFF, 0x00]);
+        let shifted_array: ByteArray = ByteArray(vec![0xFE, 0x01]);
         byte_array.left_shift();
+
+        assert_eq!(
+            byte_array.0, shifted_array.0,
+            "Failure: Shifted array was: {:?}",
+            byte_array.0
+        );
+    }
+
+    #[test]
+    fn test_byte_array_shift_right() {
+        let mut byte_array: ByteArray = ByteArray(vec![0x02]);
+        let shifted_array: ByteArray = ByteArray(vec![0x01]);
+        byte_array.right_shift();
 
         assert_eq!(
             byte_array.0, shifted_array.0,
@@ -83,10 +96,13 @@ mod tests {
     #[test]
     fn test_lsb_one() {
         let mut byte_array: ByteArray = ByteArray(vec![0x00, 0xFF]);
-        assert!(byte_array.LSB_is_one());
+        assert!(!byte_array.LSB_is_one());
 
-        let mut byte_array2: ByteArray = ByteArray(vec![0x00, 0x02]);
+        let mut byte_array2: ByteArray = ByteArray(vec![0x02, 0xFF]);
         assert!(!byte_array2.LSB_is_one());
+
+        let mut byte_array3: ByteArray = ByteArray(vec![0xFF, 0x00]);
+        assert!(byte_array3.LSB_is_one());
     }
 
     #[test]
