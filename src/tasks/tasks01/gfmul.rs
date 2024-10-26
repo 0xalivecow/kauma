@@ -11,8 +11,6 @@ use crate::utils::{
 pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
 pub fn gfmul(args: &Value) -> Result<String> {
-    eprintln!("{args}");
-
     let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
     red_poly_bytes.0.push(0x01);
 
@@ -23,9 +21,6 @@ pub fn gfmul(args: &Value) -> Result<String> {
     let poly2_text: String = serde_json::from_value(args["b"].clone())?;
     let mut poly2: ByteArray = ByteArray(BASE64_STANDARD.decode(poly2_text)?);
     poly2.0.push(0x00);
-
-    eprintln!("poly1 is: {:01X?}", poly1);
-    eprintln!("poly2 is: {:01X?}", poly2);
 
     let mut result: ByteArray = ByteArray(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
@@ -40,25 +35,10 @@ pub fn gfmul(args: &Value) -> Result<String> {
         if poly2.LSB_is_one() {
             poly1.left_shift();
             poly1.xor_byte_arrays(&red_poly_bytes);
-            eprintln!("Poly1 after reduction: {:01X?}", poly1);
             result.xor_byte_arrays(&poly1);
-            eprintln!(
-                "LSB was one; \n 
-                    poly1 is {:01X?}; \n
-                    poly2 is {:01X?}; \n
-                    result is: {:01X?}",
-                poly1.0, poly2.0, result.0
-            )
         } else {
             poly1.left_shift();
             poly1.xor_byte_arrays(&red_poly_bytes);
-            eprintln!(
-                "LSB was 0; \n
-                    poly1 is {:01X?}; \n
-                    poly2 is {:01X?}; \n
-                    result is: {:01X?}",
-                poly1.0, poly2.0, result.0
-            )
         }
         poly2.right_shift();
     }

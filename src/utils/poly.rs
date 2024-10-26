@@ -36,7 +36,6 @@ pub fn get_coefficients(num: u128) -> Vec<u8> {
     for shift in 0..128 {
         //println!("{:?}", ((num >> shift) & 1));
         if ((num >> shift) & 1) == 1 {
-            dbg!("Shift success");
             powers.push(shift);
         }
     }
