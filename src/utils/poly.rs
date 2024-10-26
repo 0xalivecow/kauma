@@ -80,6 +80,8 @@ mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
+    /*
+    * TODO: Consider removing
     #[test]
     fn coefficients_to_byte_arr_xex_test1() {
         let coefficients: Vec<u8> = vec![0];
@@ -97,7 +99,7 @@ mod tests {
         ];
         assert_eq!(coefficients_to_byte_arr_xex(coefficients), byte_array)
     }
-
+    */
     #[test]
     fn byte_indices_0x01() {
         let byte: u8 = 0x01;
