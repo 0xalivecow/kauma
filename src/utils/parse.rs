@@ -35,7 +35,7 @@ mod tests {
 
     #[test]
     fn test_json_parsing() {
-        let json = fs::read_to_string("src/test_json/parse_example.json").unwrap();
+        let json = fs::read_to_string("test_json/parse_example.json").unwrap();
         let parsed = parse_json(json).unwrap();
 
         /*

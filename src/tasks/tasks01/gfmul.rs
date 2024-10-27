@@ -10,16 +10,14 @@ use crate::utils::{
 
 pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
-pub fn gfmul(args: &Value) -> Result<String> {
+pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>) -> Result<String> {
     let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
     red_poly_bytes.0.push(0x01);
 
-    let poly1_text: String = serde_json::from_value(args["a"].clone())?;
-    let mut poly1: ByteArray = ByteArray(BASE64_STANDARD.decode(poly1_text)?);
+    let mut poly1: ByteArray = ByteArray(poly_a);
     poly1.0.push(0x00);
 
-    let poly2_text: String = serde_json::from_value(args["b"].clone())?;
-    let mut poly2: ByteArray = ByteArray(BASE64_STANDARD.decode(poly2_text)?);
+    let mut poly2: ByteArray = ByteArray(poly_b);
     poly2.0.push(0x00);
 
     let mut result: ByteArray = ByteArray(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
@@ -61,7 +59,15 @@ mod tests {
     #[test]
     fn gfmul_task01() -> Result<()> {
         let args: Value = json!({"a": "ARIAAAAAAAAAAAAAAAAAgA==", "b": "AgAAAAAAAAAAAAAAAAAAAA=="});
-        let result = gfmul(&args)?;
+
+        let poly1_text: String = serde_json::from_value(args["a"].clone())?;
+        let poly_a = BASE64_STANDARD.decode(poly1_text)?;
+
+        let poly2_text: String = serde_json::from_value(args["b"].clone())?;
+        let poly_b = BASE64_STANDARD.decode(poly2_text)?;
+
+        let result = gfmul(poly_a, poly_b)?;
+
         assert_eq!(
             result, "hSQAAAAAAAAAAAAAAAAAAA==",
             "Failure. Calulated result was: {}",
