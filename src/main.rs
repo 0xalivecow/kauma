@@ -12,7 +12,7 @@ fn main() -> Result<()> {
     let json = fs::read_to_string(path_to_workload).unwrap();
     let workload = kauma::utils::parse::parse_json(json)?;
 
-    let response = kauma::tasks::task_distrubute(&workload);
+    let response = kauma::tasks::task_distrubute(&workload)?;
     println!("{}", serde_json::to_string(&response)?);
 
     Ok(())
