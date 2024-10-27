@@ -3,6 +3,8 @@ use std::io::BufRead;
 use anyhow::Result;
 use openssl::symm::{Cipher, Crypter, Mode};
 
+use crate::utils::math::ByteArray;
+
 use super::math::xor_bytes;
 
 pub fn aes_128_encrypt(key: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
@@ -54,11 +56,77 @@ pub fn sea_128_decrypt(key: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
 }
 
 pub fn xex_encrypt(mut key: Vec<u8>, tweak: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
-    let key_parts: Vec<u8> = key.split_off(128);
-    let key1 = key_parts[0];
-    let key2 = key_parts[1];
+    let key2: Vec<u8> = key.split_off(16);
+    //let key1: ByteArray = ByteArray(vec![key_parts[0]]);
+    //let key2: ByteArray = ByteArray(vec![key_parts[1]]);
 
-    todo!();
+    let input_chunks: Vec<Vec<u8>> = input.chunks(16).map(|x| x.to_vec()).collect();
+
+    let mut output: Vec<u8> = vec![];
+    assert!(key.len() % 16 == 0, "Failure: Key len {}", key.len());
+    assert!(key2.len() % 16 == 0, "Failure: Key2 len {}", key2.len());
+    let mut tweak_block: ByteArray = ByteArray(sea_128_encrypt(&key2, tweak)?);
+
+    dbg!("input_chunks: {:001X?}", &input_chunks);
+
+    for chunk in input_chunks {
+        eprintln!("chunk: {:001X?}", &chunk);
+        let plaintext_intermediate = xor_bytes(&tweak_block.0, chunk)?;
+        eprintln!("key: {:001X?}", &key);
+        eprintln!("key2: {:001X?}", &key2);
+        eprintln!("plain: {:001X?}", &plaintext_intermediate);
+        eprintln!("tweak_block: {:001X?}", &tweak_block.0);
+
+        assert!(
+            plaintext_intermediate.len() % 16 == 0,
+            "Failure: plaintext_intermediate len was {}",
+            plaintext_intermediate.len()
+        );
+        assert!(key.len() % 16 == 0, "Failure: Key len {}", key.len());
+        assert!(key2.len() % 16 == 0, "Failure: Key2 len {}", key2.len());
+        let cypher_block_intermediate = sea_128_encrypt(&key, &plaintext_intermediate)?;
+        let mut cypher_block = xor_bytes(&tweak_block.0, cypher_block_intermediate)?;
+        output.append(cypher_block.as_mut());
+        tweak_block.left_shift_reduce();
+    }
+
+    Ok(output)
+}
+
+pub fn xex_decrypt(mut key: Vec<u8>, tweak: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
+    let key2: Vec<u8> = key.split_off(16);
+    //let key1: ByteArray = ByteArray(vec![key_parts[0]]);
+    //let key2: ByteArray = ByteArray(vec![key_parts[1]]);
+
+    let input_chunks: Vec<Vec<u8>> = input.chunks(16).map(|x| x.to_vec()).collect();
+
+    let mut output: Vec<u8> = vec![];
+    assert!(key.len() % 16 == 0, "Failure: Key len {}", key.len());
+    assert!(key2.len() % 16 == 0, "Failure: Key2 len {}", key2.len());
+    let mut tweak_block: ByteArray = ByteArray(sea_128_encrypt(&key2, tweak)?);
+
+    for chunk in input_chunks {
+        eprintln!("chunk: {:001X?}", &chunk);
+        let cyphertext_intermediate = xor_bytes(&tweak_block.0, chunk)?;
+        eprintln!("key: {:001X?}", &key);
+        eprintln!("key2: {:001X?}", &key2);
+        eprintln!("plain: {:001X?}", &cyphertext_intermediate);
+        eprintln!("tweak_block: {:001X?}", &tweak_block.0);
+
+        assert!(
+            cyphertext_intermediate.len() % 16 == 0,
+            "Failure: plaintext_intermediate len was {}",
+            cyphertext_intermediate.len()
+        );
+        assert!(key.len() % 16 == 0, "Failure: Key len {}", key.len());
+        assert!(key2.len() % 16 == 0, "Failure: Key2 len {}", key2.len());
+        let plaintext_block_intermediate = sea_128_decrypt(&key, &cyphertext_intermediate)?;
+        let mut cypher_block = xor_bytes(&tweak_block.0, plaintext_block_intermediate)?;
+        output.append(cypher_block.as_mut());
+        tweak_block.left_shift_reduce();
+    }
+
+    Ok(output)
 }
 
 /*
@@ -67,3 +135,43 @@ pub fn xex_encrypt(mut key: Vec<u8>, tweak: &Vec<u8>, input: &Vec<u8>) -> Result
     let number: u128 = <u128>::from_be_bytes(bytes);
 
 * */
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use base64::prelude::*;
+
+    #[test]
+    fn test_xex_encrypt() -> Result<()> {
+        let key = BASE64_STANDARD.decode("B1ygNO/CyRYIUYhTSgoUysX5Y/wWLi4UiWaVeloUWs0=")?;
+        let tweak = BASE64_STANDARD.decode("6VXORr+YYHrd2nVe0OlA+Q==")?;
+        let input = BASE64_STANDARD
+            .decode("/aOg4jMocLkBLkDLgkHYtFKc2L9jjyd2WXSSyxXQikpMY9ZRnsJE76e9dW9olZIW")?;
+
+        let output = BASE64_STANDARD.encode(xex_encrypt(key, &tweak, &input)?);
+
+        assert_eq!(
+            output,
+            "mHAVhRCKPAPx0BcufG5BZ4+/CbneMV/gRvqK5rtLe0OJgpDU5iT7z2P0R7gEeRDO"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_xex_decrypt() -> Result<()> {
+        let key = BASE64_STANDARD.decode("B1ygNO/CyRYIUYhTSgoUysX5Y/wWLi4UiWaVeloUWs0=")?;
+        let tweak = BASE64_STANDARD.decode("6VXORr+YYHrd2nVe0OlA+Q==")?;
+        let input = BASE64_STANDARD
+            .decode("lr/ItaYGFXCtHhdPndE65yg7u/GIdM9wscABiiFOUH2Sbyc2UFMlIRSMnZrYCW1a")?;
+
+        let output = BASE64_STANDARD.encode(xex_decrypt(key, &tweak, &input)?);
+
+        assert_eq!(
+            output,
+            "SGV5IHdpZSBrcmFzcyBkYXMgZnVua3Rpb25pZXJ0IGphIG9mZmVuYmFyIGVjaHQu"
+        );
+
+        Ok(())
+    }
+}

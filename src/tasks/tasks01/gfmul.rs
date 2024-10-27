@@ -10,7 +10,7 @@ use crate::utils::{
 
 pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
-pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>) -> Result<String> {
+pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>) -> Result<Vec<u8>> {
     let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
     red_poly_bytes.0.push(0x01);
 
@@ -42,10 +42,8 @@ pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>) -> Result<String> {
     }
 
     result.0.remove(16);
-    let mut bytes: [u8; 16] = [0u8; 16];
-    bytes.copy_from_slice(&result.0);
 
-    Ok(BASE64_STANDARD.encode(bytes))
+    Ok(result.0)
 }
 
 #[cfg(test)]
@@ -66,7 +64,7 @@ mod tests {
         let poly2_text: String = serde_json::from_value(args["b"].clone())?;
         let poly_b = BASE64_STANDARD.decode(poly2_text)?;
 
-        let result = gfmul(poly_a, poly_b)?;
+        let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b)?);
 
         assert_eq!(
             result, "hSQAAAAAAAAAAAAAAAAAAA==",

@@ -1,4 +1,7 @@
 use anyhow::{Ok, Result};
+use base64::Engine;
+
+use crate::tasks::tasks01::gfmul::gfmul;
 
 pub fn xor_bytes(vec1: &Vec<u8>, mut vec2: Vec<u8>) -> Result<Vec<u8>> {
     for (byte1, byte2) in vec1.iter().zip(vec2.iter_mut()) {
@@ -20,6 +23,13 @@ impl ByteArray {
             carry = new_carry;
         }
         carry
+    }
+
+    pub fn left_shift_reduce(&mut self) {
+        let alpha_poly: Vec<u8> = base64::prelude::BASE64_STANDARD
+            .decode("AgAAAAAAAAAAAAAAAAAAAA==")
+            .expect("Decode failed");
+        self.0 = gfmul(self.0.clone(), alpha_poly).unwrap();
     }
 
     pub fn right_shift(&mut self) -> u8 {

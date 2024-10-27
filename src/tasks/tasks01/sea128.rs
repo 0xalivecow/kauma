@@ -24,7 +24,7 @@ pub fn sea128(args: &Value) -> Result<String> {
             Ok(output)
         }
         "decrypt" => {
-            let output = BASE64_STANDARD.encode(sea_128_decrypt(&key, &input)?);
+            let output = BASE64_STANDARD.encode(sea_128_decrypt(&key.into(), &input)?);
 
             Ok(output)
         }

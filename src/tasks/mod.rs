@@ -1,3 +1,5 @@
+use base64::prelude::*;
+
 use std::collections::HashMap;
 
 use crate::utils::parse::{Responses, Testcase, Testcases};
@@ -6,7 +8,7 @@ use tasks01::{block2poly::block2poly, gfmul::gfmul, poly2block::poly2block, sea1
 use anyhow::{anyhow, Result};
 use serde_json::{json, Value};
 
-mod tasks01;
+pub mod tasks01;
 
 pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
     /*
@@ -35,7 +37,13 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
             Ok(json)
         }
         "gfmul" => {
-            let result = gfmul(args)?;
+            let poly1_text: String = serde_json::from_value(args["a"].clone())?;
+            let poly_a = BASE64_STANDARD.decode(poly1_text)?;
+
+            let poly2_text: String = serde_json::from_value(args["b"].clone())?;
+            let poly_b = BASE64_STANDARD.decode(poly2_text)?;
+
+            let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b)?);
             let json = json!({"product" : result});
             Ok(json)
         }
@@ -67,7 +75,7 @@ mod tests {
 
     #[test]
     fn test_task_deploy() {
-        let json = fs::read_to_string("src/test_json/poly2block_example.json").unwrap();
+        let json = fs::read_to_string("test_json/poly2block_example.json").unwrap();
         let parsed = parse_json(json).unwrap();
         let testcase = parsed
             .testcases
@@ -83,7 +91,7 @@ mod tests {
 
     #[test]
     fn test_task_distribution() -> Result<()> {
-        let json = fs::read_to_string("src/test_json/poly2block_example.json").unwrap();
+        let json = fs::read_to_string("test_json/poly2block_example.json").unwrap();
         let parsed = parse_json(json).unwrap();
 
         let expected = json!({ "responses": { "b856d760-023d-4b00-bad2-15d2b6da22fe": {"block": "ARIAAAAAAAAAAAAAAAAAgA=="}}});
@@ -98,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_task_sea128_task_full() -> Result<()> {
-        let json = fs::read_to_string("src/test_json/sea128.json").unwrap();
+        let json = fs::read_to_string("test_json/sea128.json").unwrap();
         let parsed = parse_json(json).unwrap();
 
         let expected = json!({
@@ -122,7 +130,7 @@ mod tests {
 
     #[test]
     fn test_task_gfmul_full() -> Result<()> {
-        let json = fs::read_to_string("src/test_json/gfmul_test.json").unwrap();
+        let json = fs::read_to_string("test_json/gfmul_test.json").unwrap();
         let parsed = parse_json(json).unwrap();
 
         let expected = json!({ "responses": { "b856d760-023d-4b00-bad2-15d2b6da22fe": {"product": "hSQAAAAAAAAAAAAAAAAAAA=="}}});
