@@ -66,5 +66,5 @@ jobs:
           docker tag ghcr.io/johndoe31415/labwork-docker:master labwork
       - name: Run labwork container
         run: |
-          docker run -v $PWD:/dut/ labwork /bin/bash -c 'pwd ; ls ; echo "ls dut" ; ls /dut ; ls ./dut/test_json/kauma_tests.json ; /dut/build && /dut/kauma /dut/test_json/kauma_tests.json'
+          docker run -v $PWD:/dut/ labwork /bin/bash -c 'pwd ; ls ; echo "ls dut" ; ls /dut ; ls -la /dut/test_json/kauma_tests.json ; /dut/build && /dut/kauma /dut/test_json/kauma_tests.json'
 
