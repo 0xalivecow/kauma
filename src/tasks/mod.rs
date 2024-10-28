@@ -1,16 +1,20 @@
+use base64::prelude::*;
+
 use std::collections::HashMap;
 
 use crate::utils::parse::{Responses, Testcase, Testcases};
 use tasks01::{
     block2poly::block2poly,
-    poly2block::{poly2block},
+    gfmul::gfmul,
+    poly2block::poly2block,
     sea128::sea128,
+    xex::{self, fde_xex},
 };
 
 use anyhow::{anyhow, Result};
 use serde_json::{json, Value};
 
-mod tasks01;
+pub mod tasks01;
 
 pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
     /*
@@ -29,6 +33,7 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
         }
         "block2poly" => {
             let result: Vec<u8> = block2poly(args)?;
+            //TODO: Sort Coefficients
             let json = json!({"coefficients" : result});
             Ok(json)
         }
@@ -37,20 +42,41 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
             let json = json!({"output" : result});
             Ok(json)
         }
-        _ => Err(anyhow!("Fatal. No compatible action found")),
+        "gfmul" => {
+            let poly1_text: String = serde_json::from_value(args["a"].clone())?;
+            let poly_a = BASE64_STANDARD.decode(poly1_text)?;
+
+            let poly2_text: String = serde_json::from_value(args["b"].clone())?;
+            let poly_b = BASE64_STANDARD.decode(poly2_text)?;
+
+            let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b)?);
+            let json = json!({"product" : result});
+            Ok(json)
+        }
+        "xex" => {
+            let result = BASE64_STANDARD.encode(fde_xex(args)?);
+            let json = json!({"output" : result});
+
+            Ok(json)
+        }
+        _ => Err(anyhow!(
+            "Fatal. No compatible action found. Json data was {:?}. Arguments were; {:?}",
+            testcase,
+            args
+        )),
     }
 }
 
-pub fn task_distrubute(testcases: &Testcases) -> Responses {
+pub fn task_distrubute(testcases: &Testcases) -> Result<Responses> {
     let mut responses: HashMap<String, Value> = HashMap::new();
 
     for (id, testcase) in &testcases.testcases {
         responses.insert(id.to_owned(), task_deploy(testcase).unwrap());
     }
 
-    Responses {
+    Ok(Responses {
         responses: responses,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -61,7 +87,7 @@ mod tests {
 
     #[test]
     fn test_task_deploy() {
-        let json = fs::read_to_string("src/test_json/poly2block_example.json").unwrap();
+        let json = fs::read_to_string("test_json/poly2block_example.json").unwrap();
         let parsed = parse_json(json).unwrap();
         let testcase = parsed
             .testcases
@@ -76,21 +102,23 @@ mod tests {
     }
 
     #[test]
-    fn test_task_distribution() {
-        let json = fs::read_to_string("src/test_json/poly2block_example.json").unwrap();
+    fn test_task_distribution() -> Result<()> {
+        let json = fs::read_to_string("test_json/poly2block_example.json").unwrap();
         let parsed = parse_json(json).unwrap();
 
         let expected = json!({ "responses": { "b856d760-023d-4b00-bad2-15d2b6da22fe": {"block": "ARIAAAAAAAAAAAAAAAAAgA=="}}});
 
         assert_eq!(
-            serde_json::to_value(task_distrubute(&parsed)).unwrap(),
+            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
             serde_json::to_value(expected).unwrap()
         );
+
+        Ok(())
     }
 
     #[test]
-    fn test_task_sea128_task_full() {
-        let json = fs::read_to_string("src/test_json/sea128.json").unwrap();
+    fn test_task_sea128_task_full() -> Result<()> {
+        let json = fs::read_to_string("test_json/sea128.json").unwrap();
         let parsed = parse_json(json).unwrap();
 
         let expected = json!({
@@ -105,8 +133,43 @@ mod tests {
         });
 
         assert_eq!(
-            serde_json::to_value(task_distrubute(&parsed)).unwrap(),
+            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
             serde_json::to_value(expected).unwrap()
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_task_gfmul_full() -> Result<()> {
+        let json = fs::read_to_string("test_json/gfmul_test.json").unwrap();
+        let parsed = parse_json(json).unwrap();
+
+        let expected = json!({ "responses": { "b856d760-023d-4b00-bad2-15d2b6da22fe": {"product": "hSQAAAAAAAAAAAAAAAAAAA=="}}});
+
+        assert_eq!(
+            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(expected).unwrap()
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_task_xex_full() -> Result<()> {
+        let json = fs::read_to_string("test_json/xex_tests.json").unwrap();
+        let parsed = parse_json(json).unwrap();
+
+        let expected = json!({ "responses": {
+        "0192d428-3913-762b-a702-d14828eae1f8": {"output": "mHAVhRCKPAPx0BcufG5BZ4+/CbneMV/gRvqK5rtLe0OJgpDU5iT7z2P0R7gEeRDO"},
+        "0192d428-3913-7168-a3bb-69c258c74dc1": {"output": "SGV5IHdpZSBrcmFzcyBkYXMgZnVua3Rpb25pZXJ0IGphIG9mZmVuYmFyIGVjaHQu"}
+        }});
+
+        assert_eq!(
+            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(expected).unwrap()
+        );
+
+        Ok(())
     }
 }

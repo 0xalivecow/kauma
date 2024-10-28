@@ -1,4 +1,3 @@
-
 use crate::utils::poly::{b64_2_num, get_coefficients};
 use anyhow::Result;
 use serde_json::Value;
@@ -7,6 +6,7 @@ pub fn block2poly(val: &Value) -> Result<Vec<u8>> {
     // Convert JSON data in to a u128
     // TODO: Transfer decoding into own function?
     let string: String = serde_json::from_value(val["block"].clone())?;
+
     let number = b64_2_num(&string)?;
 
     let coefficients: Vec<u8> = get_coefficients(number);

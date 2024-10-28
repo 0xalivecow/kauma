@@ -1,0 +1,73 @@
+{
+  "testcases": {
+    "254eaee7-05fd-4e0d-8292-9b658a852245": {
+      "action": "gfmul",
+      "arguments": {
+        "semantic": "xex",
+        "a": "ARIAAAAAAAAAAAAAAAAAgA==",
+        "b": "AgAAAAAAAAAAAAAAAAAAAA=="
+      }
+    },
+    "b8f6d760-023d-4b00-bad2-15d2b6da22fe": {
+      "action": "sea128",
+      "arguments": {
+        "mode": "encrypt",
+        "key": "istDASeincoolerKEYrofg==",
+        "input": "yv66vvrO263eyviIiDNEVQ=="
+      }
+    },
+    "254eaee7-05fd-4e0d-8292-9b658b852245": {
+      "action": "sea128",
+      "arguments": {
+        "mode": "decrypt",
+        "key": "istDASeincoolerKEYrofg==",
+        "input": "D5FDo3iVBoBN9gVi9/MSKQ=="
+      }
+    },
+    "b856d760-023d-4b00-bad2-15d2b6da22fe": {
+      "action": "block2poly",
+      "arguments": {
+        "semantic": "xex",
+        "block": "ARIAAAAAAAAAAAAAAAAAgA=="
+      }
+    },
+    "254eafe7-05fd-4e0d-8292-9b658a852245": {
+      "action": "poly2block",
+      "arguments": {
+        "semantic": "xex",
+        "coefficients": [
+          12,
+          127,
+          9,
+          0
+        ]
+      }
+    },
+    "0192d428-3913-762b-a702-d14828eae1f8": {
+      "action": "xex",
+      "arguments": {
+        "mode": "encrypt",
+        "key": "B1ygNO/CyRYIUYhTSgoUysX5Y/wWLi4UiWaVeloUWs0=",
+        "tweak": "6VXORr+YYHrd2nVe0OlA+Q==",
+        "input": "/aOg4jMocLkBLkDLgkHYtFKc2L9jjyd2WXSSyxXQikpMY9ZRnsJE76e9dW9olZIW"
+      }
+    },
+    "0192d428-3913-7168-a3bb-69c258c74dc1": {
+      "action": "xex",
+      "arguments": {
+        "mode": "decrypt",
+        "key": "B1ygNO/CyRYIUYhTSgoUysX5Y/wWLi4UiWaVeloUWs0=",
+        "tweak": "6VXORr+YYHrd2nVe0OlA+Q==",
+        "input": "lr/ItaYGFXCtHhdPndE65yg7u/GIdM9wscABiiFOUH2Sbyc2UFMlIRSMnZrYCW1a"
+      }
+    },
+    "0192d428-3913-78b5-9b35-3171c1c85484": {
+      "action": "gfmul",
+      "arguments": {
+        "semantic": "xex",
+        "a": "ARIAAAAAAAAAAAAAAAAAgA==",
+        "b": "AgAAAAAAAAAAAAAAAAAAAA=="
+      }
+    }
+  }
+}

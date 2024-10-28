@@ -1,6 +1,7 @@
 use anyhow::Result;
 use base64::prelude::*;
-use std::{str::FromStr, u128, u8};
+
+use std::{str::FromStr, u128, u8, usize};
 
 pub fn get_alpha_rep(num: u128) -> String {
     let powers: Vec<u8> = get_coefficients(num);
@@ -35,7 +36,6 @@ pub fn get_coefficients(num: u128) -> Vec<u8> {
     for shift in 0..128 {
         //println!("{:?}", ((num >> shift) & 1));
         if ((num >> shift) & 1) == 1 {
-            dbg!("Shift success");
             powers.push(shift);
         }
     }
@@ -54,6 +54,16 @@ pub fn get_bit_indices_from_byte(byte: u8) -> Vec<u8> {
     coefficients
 }
 
+pub fn coefficients_to_byte_arr_xex(coeffs: Vec<u8>) -> Vec<u8> {
+    let mut byte_array: Vec<u8> = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for coeff in coeffs {
+        let block_num = coeff / 8;
+        byte_array[usize::from(block_num)] |= (1 << (coeff % 7));
+    }
+
+    byte_array
+}
+
 pub fn coefficient_to_binary(coefficients: Vec<u8>) -> u128 {
     let mut binary_number: u128 = 0;
     for coeff in coefficients {
@@ -70,6 +80,26 @@ mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
+    /*
+    * TODO: Consider removing
+    #[test]
+    fn coefficients_to_byte_arr_xex_test1() {
+        let coefficients: Vec<u8> = vec![0];
+        let byte_array = vec![
+            01, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00,
+        ];
+        assert_eq!(coefficients_to_byte_arr_xex(coefficients), byte_array)
+    }
+
+    #[test]
+    fn coefficients_to_byte_arr_xex_test2() {
+        let coefficients: Vec<u8> = vec![127, 12, 9, 0];
+        let byte_array = vec![
+            01, 12, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 80,
+        ];
+        assert_eq!(coefficients_to_byte_arr_xex(coefficients), byte_array)
+    }
+    */
     #[test]
     fn byte_indices_0x01() {
         let byte: u8 = 0x01;
