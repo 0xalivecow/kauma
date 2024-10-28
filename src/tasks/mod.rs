@@ -3,7 +3,13 @@ use base64::prelude::*;
 use std::collections::HashMap;
 
 use crate::utils::parse::{Responses, Testcase, Testcases};
-use tasks01::{block2poly::block2poly, gfmul::gfmul, poly2block::poly2block, sea128::sea128};
+use tasks01::{
+    block2poly::block2poly,
+    gfmul::gfmul,
+    poly2block::poly2block,
+    sea128::sea128,
+    xex::{self, fde_xex},
+};
 
 use anyhow::{anyhow, Result};
 use serde_json::{json, Value};
@@ -45,6 +51,12 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
 
             let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b)?);
             let json = json!({"product" : result});
+            Ok(json)
+        }
+        "xex" => {
+            let result = BASE64_STANDARD.encode(fde_xex(args)?);
+            let json = json!({"output" : result});
+
             Ok(json)
         }
         _ => Err(anyhow!(
@@ -134,6 +146,24 @@ mod tests {
         let parsed = parse_json(json).unwrap();
 
         let expected = json!({ "responses": { "b856d760-023d-4b00-bad2-15d2b6da22fe": {"product": "hSQAAAAAAAAAAAAAAAAAAA=="}}});
+
+        assert_eq!(
+            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(expected).unwrap()
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_task_xex_full() -> Result<()> {
+        let json = fs::read_to_string("test_json/xex_tests.json").unwrap();
+        let parsed = parse_json(json).unwrap();
+
+        let expected = json!({ "responses": {
+        "0192d428-3913-762b-a702-d14828eae1f8": {"output": "mHAVhRCKPAPx0BcufG5BZ4+/CbneMV/gRvqK5rtLe0OJgpDU5iT7z2P0R7gEeRDO"},
+        "0192d428-3913-7168-a3bb-69c258c74dc1": {"output": "SGV5IHdpZSBrcmFzcyBkYXMgZnVua3Rpb25pZXJ0IGphIG9mZmVuYmFyIGVjaHQu"}
+        }});
 
         assert_eq!(
             serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
