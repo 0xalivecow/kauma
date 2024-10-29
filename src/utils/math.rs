@@ -15,14 +15,28 @@ pub fn xor_bytes(vec1: &Vec<u8>, mut vec2: Vec<u8>) -> Result<Vec<u8>> {
 pub struct ByteArray(pub Vec<u8>);
 
 impl ByteArray {
-    pub fn left_shift(&mut self) -> u8 {
-        let mut carry = 0u8;
-        for byte in self.0.iter_mut() {
-            let new_carry = *byte >> 7;
-            *byte = (*byte << 1) | carry;
-            carry = new_carry;
+    pub fn left_shift(&mut self, semantic: &str) -> Result<u8> {
+        match semantic {
+            "xex" => {
+                let mut carry = 0u8;
+                for byte in self.0.iter_mut() {
+                    let new_carry = *byte >> 7;
+                    *byte = (*byte << 1) | carry;
+                    carry = new_carry;
+                }
+                Ok(carry)
+            }
+            "gcm" => {
+                let mut carry = 0u8;
+                for byte in self.0.iter_mut() {
+                    let new_carry = *byte & 1;
+                    *byte = (*byte >> 1) | (carry << 7);
+                    carry = new_carry;
+                }
+                Ok(carry)
+            }
+            _ => Err(anyhow!("Failure in lsh. No compatible action found")),
         }
-        carry
     }
 
     pub fn left_shift_reduce(&mut self, semantic: &str) {
@@ -97,7 +111,7 @@ mod tests {
     fn test_byte_array_shift1() {
         let mut byte_array: ByteArray = ByteArray(vec![0x00, 0x01]);
         let shifted_array: ByteArray = ByteArray(vec![0x00, 0x02]);
-        byte_array.left_shift();
+        byte_array.left_shift("xex");
 
         assert_eq!(byte_array.0, shifted_array.0);
     }
@@ -106,11 +120,37 @@ mod tests {
     fn test_byte_array_shift2() {
         let mut byte_array: ByteArray = ByteArray(vec![0xFF, 0x00]);
         let shifted_array: ByteArray = ByteArray(vec![0xFE, 0x01]);
-        byte_array.left_shift();
+        byte_array.left_shift("xex");
 
         assert_eq!(
             byte_array.0, shifted_array.0,
             "Failure: Shifted array was: {:?}",
+            byte_array.0
+        );
+    }
+
+    #[test]
+    fn test_byte_array_shift1_gcm() {
+        let mut byte_array: ByteArray = ByteArray(vec![0xFF, 0x00]);
+        let shifted_array: ByteArray = ByteArray(vec![0x7F, 0x80]);
+        byte_array.left_shift("gcm");
+
+        assert_eq!(
+            byte_array.0, shifted_array.0,
+            "Failure: Shifted array was: {:02X?}",
+            byte_array.0
+        );
+    }
+
+    #[test]
+    fn test_byte_array_shift1_right_gcm() {
+        let mut byte_array: ByteArray = ByteArray(vec![0xFF, 0x00]);
+        let shifted_array: ByteArray = ByteArray(vec![0xFE, 0x00]);
+        byte_array.right_shift("gcm");
+
+        assert_eq!(
+            byte_array.0, shifted_array.0,
+            "Failure: Shifted array was: {:02X?}",
             byte_array.0
         );
     }
@@ -130,13 +170,13 @@ mod tests {
 
     #[test]
     fn test_lsb_one() {
-        let mut byte_array: ByteArray = ByteArray(vec![0x00, 0xFF]);
+        let byte_array: ByteArray = ByteArray(vec![0x00, 0xFF]);
         assert!(!byte_array.LSB_is_one());
 
-        let mut byte_array2: ByteArray = ByteArray(vec![0x02, 0xFF]);
+        let byte_array2: ByteArray = ByteArray(vec![0x02, 0xFF]);
         assert!(!byte_array2.LSB_is_one());
 
-        let mut byte_array3: ByteArray = ByteArray(vec![0xFF, 0x00]);
+        let byte_array3: ByteArray = ByteArray(vec![0xFF, 0x00]);
         assert!(byte_array3.LSB_is_one());
     }
 
