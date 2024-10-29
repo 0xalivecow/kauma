@@ -1,7 +1,45 @@
+use crate::utils::math::ByteArray;
 use anyhow::Result;
 use base64::prelude::*;
-
+use serde_json::Value;
 use std::{str::FromStr, u128, u8, usize};
+pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
+
+pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
+    let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
+    red_poly_bytes.0.push(0x01);
+
+    let mut poly1: ByteArray = ByteArray(poly_a);
+    poly1.0.push(0x00);
+
+    let mut poly2: ByteArray = ByteArray(poly_b);
+    poly2.0.push(0x00);
+
+    let mut result: ByteArray = ByteArray(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+
+    if poly2.LSB_is_one() {
+        result.xor_byte_arrays(&poly1);
+        poly2.right_shift(semantic);
+    } else {
+        poly2.right_shift(semantic);
+    }
+
+    while !poly2.is_empty() {
+        if poly2.LSB_is_one() {
+            poly1.left_shift();
+            poly1.xor_byte_arrays(&red_poly_bytes);
+            result.xor_byte_arrays(&poly1);
+        } else {
+            poly1.left_shift();
+            poly1.xor_byte_arrays(&red_poly_bytes);
+        }
+        poly2.right_shift(semantic);
+    }
+
+    result.0.remove(16);
+
+    Ok(result.0)
+}
 
 pub fn get_alpha_rep(num: u128) -> String {
     let powers: Vec<u8> = get_coefficients(num);

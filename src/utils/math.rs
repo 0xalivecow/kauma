@@ -1,7 +1,7 @@
-use anyhow::{Ok, Result};
+use anyhow::{anyhow, Ok, Result};
 use base64::Engine;
 
-use crate::tasks::tasks01::gfmul::gfmul;
+use super::poly::gfmul;
 
 pub fn xor_bytes(vec1: &Vec<u8>, mut vec2: Vec<u8>) -> Result<Vec<u8>> {
     for (byte1, byte2) in vec1.iter().zip(vec2.iter_mut()) {
@@ -25,21 +25,46 @@ impl ByteArray {
         carry
     }
 
-    pub fn left_shift_reduce(&mut self) {
-        let alpha_poly: Vec<u8> = base64::prelude::BASE64_STANDARD
-            .decode("AgAAAAAAAAAAAAAAAAAAAA==")
-            .expect("Decode failed");
-        self.0 = gfmul(self.0.clone(), alpha_poly).unwrap();
+    pub fn left_shift_reduce(&mut self, semantic: &str) {
+        match semantic {
+            "xex" => {
+                let alpha_poly: Vec<u8> = base64::prelude::BASE64_STANDARD
+                    .decode("AgAAAAAAAAAAAAAAAAAAAA==")
+                    .expect("Decode failed");
+                self.0 = gfmul(self.0.clone(), alpha_poly, "xex").unwrap();
+            }
+            "gcm" => {
+                let alpha_poly: Vec<u8> = base64::prelude::BASE64_STANDARD
+                    .decode("AgAAAAAAAAAAAAAAAAAAAA==")
+                    .expect("Decode failed");
+                self.0 = gfmul(self.0.clone(), alpha_poly, "gcm").unwrap();
+            }
+            _ => {}
+        }
     }
 
-    pub fn right_shift(&mut self) -> u8 {
-        let mut carry = 0u8;
-        for byte in self.0.iter_mut().rev() {
-            let new_carry = *byte & 1;
-            *byte = (*byte >> 1) | (carry << 7);
-            carry = new_carry;
+    pub fn right_shift(&mut self, semantic: &str) -> Result<u8> {
+        match semantic {
+            "xex" => {
+                let mut carry = 0u8;
+                for byte in self.0.iter_mut().rev() {
+                    let new_carry = *byte & 1;
+                    *byte = (*byte >> 1) | (carry << 7);
+                    carry = new_carry;
+                }
+                Ok(carry)
+            }
+            "gcm" => {
+                let mut carry = 0u8;
+                for byte in self.0.iter_mut().rev() {
+                    let new_carry = *byte & 1;
+                    *byte = (*byte << 1) | carry;
+                    carry = new_carry;
+                }
+                Ok(carry)
+            }
+            _ => Err(anyhow!("Failure in rsh. No valid semantic found")),
         }
-        carry
     }
 
     pub fn xor_byte_arrays(&mut self, vec2: &ByteArray) {
@@ -94,7 +119,7 @@ mod tests {
     fn test_byte_array_shift_right() {
         let mut byte_array: ByteArray = ByteArray(vec![0x02]);
         let shifted_array: ByteArray = ByteArray(vec![0x01]);
-        byte_array.right_shift();
+        byte_array.right_shift("xex");
 
         assert_eq!(
             byte_array.0, shifted_array.0,

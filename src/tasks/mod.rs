@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use crate::utils::parse::{Responses, Testcase, Testcases};
 use tasks01::{
     block2poly::block2poly,
-    gfmul::gfmul,
+    gfmul::gfmul_task,
     poly2block::poly2block,
     sea128::sea128,
     xex::{self, fde_xex},
@@ -43,13 +43,7 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
             Ok(json)
         }
         "gfmul" => {
-            let poly1_text: String = serde_json::from_value(args["a"].clone())?;
-            let poly_a = BASE64_STANDARD.decode(poly1_text)?;
-
-            let poly2_text: String = serde_json::from_value(args["b"].clone())?;
-            let poly_b = BASE64_STANDARD.decode(poly2_text)?;
-
-            let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b)?);
+            let result = BASE64_STANDARD.encode(gfmul_task(args)?);
             let json = json!({"product" : result});
             Ok(json)
         }
