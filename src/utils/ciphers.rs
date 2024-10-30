@@ -167,4 +167,17 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_xex_encrypt_empty_case() -> Result<()> {
+        let key = BASE64_STANDARD.decode("B1ygNO/CyRYIUYhTSgoUysX5Y/wWLi4UiWaVeloUWs0=")?;
+        let tweak = BASE64_STANDARD.decode("6VXORr+YYHrd2nVe0OlA+Q==")?;
+        let input = BASE64_STANDARD.decode("")?;
+
+        let output = BASE64_STANDARD.encode(xex_encrypt(key, &tweak, &input)?);
+
+        assert_eq!(output, "");
+
+        Ok(())
+    }
 }
