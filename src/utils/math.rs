@@ -92,6 +92,10 @@ impl ByteArray {
         (self.0.first().unwrap() & 1) == 1
     }
 
+    pub fn msb_is_one(&self) -> bool {
+        (self.0.last().unwrap() & 1) == 1
+    }
+
     pub fn is_empty(&self) -> bool {
         for i in self.0.iter() {
             if *i != 0 {

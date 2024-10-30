@@ -19,20 +19,20 @@ pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>, semantic: &str) -> Result<Vec<u8>
 
     if poly2.LSB_is_one() {
         result.xor_byte_arrays(&poly1);
-        poly2.right_shift(semantic)?;
-    } else {
-        poly2.right_shift(semantic)?;
     }
+    poly2.right_shift(semantic)?;
 
     while !poly2.is_empty() {
-        if poly2.LSB_is_one() {
-            poly1.left_shift(semantic)?;
-            poly1.xor_byte_arrays(&red_poly_bytes);
-            result.xor_byte_arrays(&poly1);
-        } else {
-            poly1.left_shift(semantic)?;
+        poly1.left_shift(semantic)?;
+
+        if poly1.msb_is_one() {
             poly1.xor_byte_arrays(&red_poly_bytes);
         }
+
+        if poly2.LSB_is_one() {
+            result.xor_byte_arrays(&poly1);
+        }
+
         poly2.right_shift(semantic)?;
     }
 
