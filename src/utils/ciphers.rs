@@ -83,7 +83,7 @@ pub fn xex_encrypt(mut key: Vec<u8>, tweak: &Vec<u8>, input: &Vec<u8>) -> Result
         let cypher_block_intermediate = sea_128_encrypt(&key, &plaintext_intermediate)?;
         let mut cypher_block = xor_bytes(&tweak_block.0, cypher_block_intermediate)?;
         output.append(cypher_block.as_mut());
-        tweak_block.left_shift_reduce();
+        tweak_block.left_shift_reduce("xex");
     }
 
     Ok(output)
@@ -116,7 +116,7 @@ pub fn xex_decrypt(mut key: Vec<u8>, tweak: &Vec<u8>, input: &Vec<u8>) -> Result
         let plaintext_block_intermediate = sea_128_decrypt(&key, &cyphertext_intermediate)?;
         let mut cypher_block = xor_bytes(&tweak_block.0, plaintext_block_intermediate)?;
         output.append(cypher_block.as_mut());
-        tweak_block.left_shift_reduce();
+        tweak_block.left_shift_reduce("xex");
     }
 
     Ok(output)
@@ -164,6 +164,19 @@ mod tests {
             output,
             "SGV5IHdpZSBrcmFzcyBkYXMgZnVua3Rpb25pZXJ0IGphIG9mZmVuYmFyIGVjaHQu"
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_xex_encrypt_empty_case() -> Result<()> {
+        let key = BASE64_STANDARD.decode("B1ygNO/CyRYIUYhTSgoUysX5Y/wWLi4UiWaVeloUWs0=")?;
+        let tweak = BASE64_STANDARD.decode("6VXORr+YYHrd2nVe0OlA+Q==")?;
+        let input = BASE64_STANDARD.decode("")?;
+
+        let output = BASE64_STANDARD.encode(xex_encrypt(key, &tweak, &input)?);
+
+        assert_eq!(output, "");
 
         Ok(())
     }

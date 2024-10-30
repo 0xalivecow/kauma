@@ -1,49 +1,24 @@
-use anyhow::Result;
-use base64::prelude::*;
-//use num_bigint::{BigUint, ToBigUint};
-use serde_json::Value;
-
 use crate::utils::{
     math::ByteArray,
-    poly::{b64_2_num, coefficient_to_binary},
+    poly::{b64_2_num, coefficient_to_binary, gfmul},
 };
 
-pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
+use anyhow::Result;
+use base64::prelude::*;
+use serde_json::Value;
 
-pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>) -> Result<Vec<u8>> {
-    let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
-    red_poly_bytes.0.push(0x01);
+pub fn gfmul_task(args: &Value) -> Result<Vec<u8>> {
+    let poly1_text: String = serde_json::from_value(args["a"].clone())?;
+    let poly_a = BASE64_STANDARD.decode(poly1_text)?;
 
-    let mut poly1: ByteArray = ByteArray(poly_a);
-    poly1.0.push(0x00);
+    let poly2_text: String = serde_json::from_value(args["b"].clone())?;
+    let poly_b = BASE64_STANDARD.decode(poly2_text)?;
 
-    let mut poly2: ByteArray = ByteArray(poly_b);
-    poly2.0.push(0x00);
+    let semantic: String = serde_json::from_value(args["semantic"].clone())?;
 
-    let mut result: ByteArray = ByteArray(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    let result = gfmul(poly_a, poly_b, &semantic)?;
 
-    if poly2.LSB_is_one() {
-        result.xor_byte_arrays(&poly1);
-        poly2.right_shift();
-    } else {
-        poly2.right_shift();
-    }
-
-    while !poly2.is_empty() {
-        if poly2.LSB_is_one() {
-            poly1.left_shift();
-            poly1.xor_byte_arrays(&red_poly_bytes);
-            result.xor_byte_arrays(&poly1);
-        } else {
-            poly1.left_shift();
-            poly1.xor_byte_arrays(&red_poly_bytes);
-        }
-        poly2.right_shift();
-    }
-
-    result.0.remove(16);
-
-    Ok(result.0)
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -64,7 +39,67 @@ mod tests {
         let poly2_text: String = serde_json::from_value(args["b"].clone())?;
         let poly_b = BASE64_STANDARD.decode(poly2_text)?;
 
-        let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b)?);
+        let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b, "xex")?);
+
+        assert_eq!(
+            result, "hSQAAAAAAAAAAAAAAAAAAA==",
+            "Failure. Calulated result was: {}",
+            result
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn gfmul_task02() -> Result<()> {
+        let args: Value = json!({"a": "AwEAAAAAAAAAAAAAAAAAgA==", "b": "gBAAAAAAAAAAAAAAAAAAAA=="});
+
+        let poly1_text: String = serde_json::from_value(args["a"].clone())?;
+        let poly_a = BASE64_STANDARD.decode(poly1_text)?;
+
+        let poly2_text: String = serde_json::from_value(args["b"].clone())?;
+        let poly_b = BASE64_STANDARD.decode(poly2_text)?;
+
+        let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b, "xex")?);
+
+        assert_eq!(
+            result, "QKgUAAAAAAAAAAAAAAAAAA==",
+            "Failure. Calulated result was: {}",
+            result
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn gfmul_task03() -> Result<()> {
+        let args: Value = json!({"a": "AwEAAAAAAAAAAAAAAAAAgA==", "b": "oBAAAAAAAAAAAAAAAAAAAA=="});
+
+        let poly1_text: String = serde_json::from_value(args["a"].clone())?;
+        let poly_a = BASE64_STANDARD.decode(poly1_text)?;
+
+        let poly2_text: String = serde_json::from_value(args["b"].clone())?;
+        let poly_b = BASE64_STANDARD.decode(poly2_text)?;
+
+        let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b, "xex")?);
+
+        assert_eq!(
+            result, "UIAUAAAAAAAAAAAAAAAAAA==",
+            "Failure. Calulated result was: {}",
+            result
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn gfmul_task04() -> Result<()> {
+        let args: Value = json!({"a": "ARIAAAAAAAAAAAAAAAAAgA==", "b": "AgAAAAAAAAAAAAAAAAAAAA=="});
+
+        let poly1_text: String = serde_json::from_value(args["a"].clone())?;
+        let poly_a = BASE64_STANDARD.decode(poly1_text)?;
+
+        let poly2_text: String = serde_json::from_value(args["b"].clone())?;
+        let poly_b = BASE64_STANDARD.decode(poly2_text)?;
+
+        let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b, "xex")?);
 
         assert_eq!(
             result, "hSQAAAAAAAAAAAAAAAAAAA==",
