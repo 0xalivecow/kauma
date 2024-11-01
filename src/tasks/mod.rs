@@ -27,7 +27,7 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
 
     match testcase.action.as_str() {
         "poly2block" => {
-            let result = poly2block(args);
+            let result = BASE64_STANDARD.encode(poly2block(args)?);
             let json = json!({"block" : result});
             Ok(json)
         }

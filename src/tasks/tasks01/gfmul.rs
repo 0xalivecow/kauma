@@ -1,5 +1,5 @@
 use crate::utils::{
-    math::ByteArray,
+    field::ByteArray,
     poly::{b64_2_num, coefficient_to_binary, gfmul},
 };
 

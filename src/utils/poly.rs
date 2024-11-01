@@ -1,8 +1,10 @@
-use crate::utils::math::ByteArray;
-use anyhow::Result;
+use crate::utils::field::ByteArray;
+use anyhow::{anyhow, Result};
 use base64::prelude::*;
 use serde_json::Value;
 use std::{str::FromStr, u128, u8, usize};
+
+use super::field;
 pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
 pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
@@ -39,6 +41,15 @@ pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>, semantic: &str) -> Result<Vec<u8>
     result.0.remove(16);
 
     Ok(result.0)
+}
+
+pub fn convert_gcm_to_xex(gcm_poly: Vec<u8>) -> Result<Vec<u8>> {
+    let xex_poly = gcm_poly
+        .into_iter()
+        .map(|block| block.reverse_bits())
+        .collect();
+
+    Ok(xex_poly)
 }
 
 pub fn get_alpha_rep(num: u128) -> String {
@@ -90,6 +101,62 @@ pub fn get_bit_indices_from_byte(byte: u8) -> Vec<u8> {
     }
 
     coefficients
+}
+
+pub fn block_2_polynomial(block: Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
+    let mut output: Vec<u8> = vec![];
+    match semantic {
+        "xex" => {
+            for i in 0u8..=15 {
+                for j in 0u8..=7 {
+                    if (block[i as usize] >> j) & 1 == 1 {
+                        output.push(8 * i + j);
+                    }
+                }
+            }
+            output.sort();
+            Ok(output)
+        }
+        "gcm" => {
+            for i in 0u8..=15 {
+                for j in 0u8..=7 {
+                    if (block[i as usize] >> j) & 1 == 1 {
+                        output.push(8 * i + 7 - j);
+                    }
+                }
+            }
+            output.sort();
+            Ok(output)
+        }
+        _ => Err(anyhow!("Error in b2p")),
+    }
+}
+
+pub fn polynomial_2_block(coefficients: Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
+    let mut output: Vec<u8> = Vec::with_capacity(16);
+    output.resize(16, 0);
+
+    match semantic {
+        "xex" => {
+            for coefficient in coefficients {
+                let byte_position = coefficient / 8;
+                let bit_position = coefficient % 8;
+
+                output[byte_position as usize] ^= 1 << bit_position;
+            }
+            Ok(output)
+        }
+        "gcm" => {
+            for coefficient in coefficients {
+                let byte_position = coefficient / 8;
+                let bit_position = coefficient % 8;
+
+                output[byte_position as usize] ^= 1 << 7 - bit_position;
+            }
+            Ok(output)
+        }
+        _ => Err(anyhow!("Error in b2p")),
+    }
 }
 
 pub fn coefficients_to_byte_arr_xex(coeffs: Vec<u8>) -> Vec<u8> {
