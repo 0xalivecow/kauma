@@ -3,7 +3,7 @@ use std::io::BufRead;
 use anyhow::Result;
 use openssl::symm::{Cipher, Crypter, Mode};
 
-use crate::utils::math::ByteArray;
+use crate::utils::field::ByteArray;
 
 use super::math::xor_bytes;
 
