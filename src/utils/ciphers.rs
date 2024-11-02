@@ -65,12 +65,12 @@ pub fn xex_encrypt(mut key: Vec<u8>, tweak: &Vec<u8>, input: &Vec<u8>) -> Result
     let mut output: Vec<u8> = vec![];
     //assert!(key.len() % 16 == 0, "Failure: Key len {}", key.len());
     //assert!(key2.len() % 16 == 0, "Failure: Key2 len {}", key2.len());
-    let mut tweak_block: ByteArray = ByteArray(sea_128_encrypt(&key2, tweak)?);
+    let mut tweak_block: ByteArray = ByteArray::from(sea_128_encrypt(&key2, tweak)?);
 
     //dbg!("input_chunks: {:001X?}", &input_chunks);
 
     for chunk in input_chunks {
-        let plaintext_intermediate = xor_bytes(&tweak_block.0, chunk)?;
+        let plaintext_intermediate = xor_bytes(&tweak_block.vector, chunk)?;
         /*
                 assert!(
                     plaintext_intermediate.len() % 16 == 0,
@@ -81,7 +81,7 @@ pub fn xex_encrypt(mut key: Vec<u8>, tweak: &Vec<u8>, input: &Vec<u8>) -> Result
         //assert!(key.len() % 16 == 0, "Failure: Key len {}", key.len());
         //assert!(key2.len() % 16 == 0, "Failure: Key2 len {}", key2.len());
         let cypher_block_intermediate = sea_128_encrypt(&key, &plaintext_intermediate)?;
-        let mut cypher_block = xor_bytes(&tweak_block.0, cypher_block_intermediate)?;
+        let mut cypher_block = xor_bytes(&tweak_block.vector, cypher_block_intermediate)?;
         output.append(cypher_block.as_mut());
         tweak_block.left_shift_reduce("xex");
     }
@@ -99,10 +99,10 @@ pub fn xex_decrypt(mut key: Vec<u8>, tweak: &Vec<u8>, input: &Vec<u8>) -> Result
     let mut output: Vec<u8> = vec![];
     //assert!(key.len() % 16 == 0, "Failure: Key len {}", key.len());
     //assert!(key2.len() % 16 == 0, "Failure: Key2 len {}", key2.len());
-    let mut tweak_block: ByteArray = ByteArray(sea_128_encrypt(&key2, tweak)?);
+    let mut tweak_block: ByteArray = ByteArray::from(sea_128_encrypt(&key2, tweak)?);
 
     for chunk in input_chunks {
-        let cyphertext_intermediate = xor_bytes(&tweak_block.0, chunk)?;
+        let cyphertext_intermediate = xor_bytes(&tweak_block.vector, chunk)?;
 
         /*
         assert!(
@@ -114,12 +114,48 @@ pub fn xex_decrypt(mut key: Vec<u8>, tweak: &Vec<u8>, input: &Vec<u8>) -> Result
         assert!(key2.len() % 16 == 0, "Failure: Key2 len {}", key2.len());
         */
         let plaintext_block_intermediate = sea_128_decrypt(&key, &cyphertext_intermediate)?;
-        let mut cypher_block = xor_bytes(&tweak_block.0, plaintext_block_intermediate)?;
+        let mut cypher_block = xor_bytes(&tweak_block.vector, plaintext_block_intermediate)?;
         output.append(cypher_block.as_mut());
         tweak_block.left_shift_reduce("xex");
     }
 
     Ok(output)
+}
+
+pub fn gcm_aes_encrypt(
+    action: &str,
+    mut nonce: Vec<u8>,
+    key: Vec<u8>,
+    plaintext: Vec<u8>,
+    ad: ByteArray,
+) -> Result<Vec<u8>> {
+    nonce.append(vec![0x01].as_mut());
+
+    let auth_text_xor_block = aes_128_encrypt(&key, &nonce);
+
+    let auth_key_h = aes_128_encrypt(&key, &vec![0]);
+
+    let plaintext: Vec<Vec<u8>> = plaintext.chunks(16).map(|x| x.to_vec()).collect();
+
+    let mut output: Vec<Vec<u8>> = vec![];
+
+    for (ctr, chunk) in plaintext.iter().enumerate() {
+        nonce.pop();
+        nonce.push(ctr as u8);
+
+        let intermediate = aes_128_encrypt(&key, &nonce)?;
+
+        let intermediate2 = xor_bytes(chunk, intermediate)?;
+
+        output.push(intermediate2);
+    }
+    todo!();
+}
+
+pub fn ghash(auth_key_h: Vec<u8>, ad: Vec<u8>, ciphertext: Vec<Vec<u8>>) {
+    let output: Vec<u8> = vec![0, 16];
+
+    let inter1 = xor_bytes(&output, ad);
 }
 
 /*
