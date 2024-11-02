@@ -4,11 +4,7 @@ use std::collections::HashMap;
 
 use crate::utils::parse::{Responses, Testcase, Testcases};
 use tasks01::{
-    block2poly::block2poly,
-    gfmul::gfmul_task,
-    poly2block::poly2block,
-    sea128::sea128,
-    xex::{fde_xex},
+    block2poly::block2poly, gfmul::gfmul_task, poly2block::poly2block, sea128::sea128, xex::fde_xex,
 };
 
 use anyhow::{anyhow, Result};

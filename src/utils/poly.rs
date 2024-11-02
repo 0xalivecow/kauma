@@ -9,27 +9,44 @@ pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>, semantic: &str) -> Result<Vec<u8>
     let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
     red_poly_bytes.0.push(0x01);
 
+    red_poly_bytes.reverse_bits_in_bytevec();
+
     let mut poly1: ByteArray = ByteArray(poly_a);
     poly1.0.push(0x00);
 
     let mut poly2: ByteArray = ByteArray(poly_b);
     poly2.0.push(0x00);
 
+    eprintln!(
+        "poly1 is: {:001X?} \n poly2 is: {:001X?} \n gen poly is: {:001X?} \n",
+        poly1, poly2, red_poly_bytes
+    );
+
     let mut result: ByteArray = ByteArray(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
-    if poly2.LSB_is_one() {
+    if poly2.msb_is_one() {
         result.xor_byte_arrays(&poly1);
     }
     poly2.right_shift(semantic)?;
 
+    eprintln!(
+        "poly1 is: {:001X?} \n poly2 is: {:001X?} \n gen poly is: {:001X?} \n result is: {:001X?} \n ",
+        poly1, poly2, red_poly_bytes, result
+    );
+
     while !poly2.is_empty() {
+        eprintln!(
+            "poly1 is: {:001X?} \n poly2 is: {:001X?} \n gen poly is: {:001X?} \n result is: {:001X?} \n ",
+            poly1, poly2, red_poly_bytes, result
+        );
         poly1.left_shift(semantic)?;
 
-        if poly1.msb_is_one() {
+        if poly1.lsb_is_one() {
             poly1.xor_byte_arrays(&red_poly_bytes);
         }
 
-        if poly2.LSB_is_one() {
+        if poly2.msb_is_one() {
+            eprintln!("poly write to result");
             result.xor_byte_arrays(&poly1);
         }
 
@@ -108,10 +125,10 @@ pub fn block_2_polynomial(block: Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
         let mut output: Vec<u8> = vec![];
         match semantic {
             "xex" => {
-                for i in 0u8..=15 {
-                    for j in 0u8..=7 {
-                        if (block[i as usize] >> j) & 1 == 1 {
-                            output.push(8 * i + j);
+                for byte in 0u8..=15 {
+                    for bit in 0u8..=7 {
+                        if (block[byte as usize] >> bit) & 1 == 1 {
+                            output.push(8 * byte + bit);
                         }
                     }
                 }
@@ -119,10 +136,10 @@ pub fn block_2_polynomial(block: Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
                 Ok(output)
             }
             "gcm" => {
-                for i in 0u8..=15 {
-                    for j in 0u8..=7 {
-                        if (block[i as usize] >> j) & 1 == 1 {
-                            output.push(8 * i + 7 - j);
+                for byte in 0u8..=15 {
+                    for bit in 0u8..=7 {
+                        if (block[byte as usize] >> bit) & 1 == 1 {
+                            output.push(8 * byte + 7 - bit);
                         }
                     }
                 }

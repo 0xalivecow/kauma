@@ -22,30 +22,12 @@ impl ByteArray {
                 let mut carry = 0u8;
                 for byte in self.0.iter_mut() {
                     let new_carry = *byte & 1;
-                    *byte = (*byte >> 1) | (carry << 7);
+                    *byte = (*byte >> 1) | carry << 7;
                     carry = new_carry;
                 }
                 Ok(carry)
             }
             _ => Err(anyhow!("Failure in lsh. No compatible action found")),
-        }
-    }
-
-    pub fn left_shift_reduce(&mut self, semantic: &str) {
-        match semantic {
-            "xex" => {
-                let alpha_poly: Vec<u8> = base64::prelude::BASE64_STANDARD
-                    .decode("AgAAAAAAAAAAAAAAAAAAAA==")
-                    .expect("Decode failed");
-                self.0 = gfmul(self.0.clone(), alpha_poly, "xex").unwrap();
-            }
-            "gcm" => {
-                let alpha_poly: Vec<u8> = base64::prelude::BASE64_STANDARD
-                    .decode("AgAAAAAAAAAAAAAAAAAAAA==")
-                    .expect("Decode failed");
-                self.0 = gfmul(self.0.clone(), alpha_poly, "gcm").unwrap();
-            }
-            _ => {}
         }
     }
 
@@ -73,6 +55,24 @@ impl ByteArray {
         }
     }
 
+    pub fn left_shift_reduce(&mut self, semantic: &str) {
+        match semantic {
+            "xex" => {
+                let alpha_poly: Vec<u8> = base64::prelude::BASE64_STANDARD
+                    .decode("AgAAAAAAAAAAAAAAAAAAAA==")
+                    .expect("Decode failed");
+                self.0 = gfmul(self.0.clone(), alpha_poly, "xex").unwrap();
+            }
+            "gcm" => {
+                let alpha_poly: Vec<u8> = base64::prelude::BASE64_STANDARD
+                    .decode("AgAAAAAAAAAAAAAAAAAAAA==")
+                    .expect("Decode failed");
+                self.0 = gfmul(self.0.clone(), alpha_poly, "gcm").unwrap();
+            }
+            _ => {}
+        }
+    }
+
     pub fn xor_byte_arrays(&mut self, vec2: &ByteArray) {
         self.0
             .iter_mut()
@@ -80,7 +80,7 @@ impl ByteArray {
             .for_each(|(x1, x2)| *x1 ^= *x2);
     }
 
-    pub fn LSB_is_one(&self) -> bool {
+    pub fn lsb_is_one(&self) -> bool {
         (self.0.first().unwrap() & 1) == 1
     }
 
@@ -96,12 +96,15 @@ impl ByteArray {
         }
         true
     }
+
+    pub fn reverse_bits_in_bytevec(&mut self) {
+        self.0 = self.0.iter_mut().map(|byte| byte.reverse_bits()).collect();
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
 
     #[test]
     fn test_byte_array_shift1() {
@@ -167,13 +170,13 @@ mod tests {
     #[test]
     fn test_lsb_one() {
         let byte_array: ByteArray = ByteArray(vec![0x00, 0xFF]);
-        assert!(!byte_array.LSB_is_one());
+        assert!(!byte_array.lsb_is_one());
 
         let byte_array2: ByteArray = ByteArray(vec![0x02, 0xFF]);
-        assert!(!byte_array2.LSB_is_one());
+        assert!(!byte_array2.lsb_is_one());
 
         let byte_array3: ByteArray = ByteArray(vec![0xFF, 0x00]);
-        assert!(byte_array3.LSB_is_one());
+        assert!(byte_array3.lsb_is_one());
     }
 
     #[test]
