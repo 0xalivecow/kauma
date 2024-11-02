@@ -6,16 +6,16 @@ use std::{str::FromStr, u128, u8, usize};
 pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
 pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
-    let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
-    red_poly_bytes.0.push(0x01);
+    let mut red_poly_bytes: ByteArray = ByteArray::from(RED_POLY.to_be_bytes().to_vec());
+    red_poly_bytes.vector.push(0x01);
 
     red_poly_bytes.reverse_bits_in_bytevec();
 
-    let mut poly1: ByteArray = ByteArray(poly_a);
-    poly1.0.push(0x00);
+    let mut poly1: ByteArray = ByteArray::from(poly_a);
+    poly1.vector.push(0x00);
 
-    let mut poly2: ByteArray = ByteArray(poly_b);
-    poly2.0.push(0x00);
+    let mut poly2: ByteArray = ByteArray::from(poly_b);
+    poly2.vector.push(0x00);
 
     eprintln!(
         "poly1 is: {:001X?} \n poly2 is: {:001X?} \n gen poly is: {:001X?} \n",
@@ -23,6 +23,8 @@ pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>, semantic: &str) -> Result<Vec<u8>
     );
 
     let mut result: ByteArray = ByteArray(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    let mut result: ByteArray =
+        ByteArray::from(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
     if poly2.msb_is_one() {
         result.xor_byte_arrays(&poly1);
@@ -53,9 +55,9 @@ pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>, semantic: &str) -> Result<Vec<u8>
         poly2.right_shift(semantic)?;
     }
 
-    result.0.remove(16);
+    result.vector.remove(16);
 
-    Ok(result.0)
+    Ok(result.vector)
 }
 
 pub fn convert_gcm_to_xex(gcm_poly: Vec<u8>) -> Result<Vec<u8>> {
