@@ -104,31 +104,35 @@ pub fn get_bit_indices_from_byte(byte: u8) -> Vec<u8> {
 }
 
 pub fn block_2_polynomial(block: Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
-    let mut output: Vec<u8> = vec![];
-    match semantic {
-        "xex" => {
-            for i in 0u8..=15 {
-                for j in 0u8..=7 {
-                    if (block[i as usize] >> j) & 1 == 1 {
-                        output.push(8 * i + j);
+    if block.len() == 0 {
+        Ok(Vec::new())
+    } else {
+        let mut output: Vec<u8> = vec![];
+        match semantic {
+            "xex" => {
+                for i in 0u8..=15 {
+                    for j in 0u8..=7 {
+                        if (block[i as usize] >> j) & 1 == 1 {
+                            output.push(8 * i + j);
+                        }
                     }
                 }
+                output.sort();
+                Ok(output)
             }
-            output.sort();
-            Ok(output)
-        }
-        "gcm" => {
-            for i in 0u8..=15 {
-                for j in 0u8..=7 {
-                    if (block[i as usize] >> j) & 1 == 1 {
-                        output.push(8 * i + 7 - j);
+            "gcm" => {
+                for i in 0u8..=15 {
+                    for j in 0u8..=7 {
+                        if (block[i as usize] >> j) & 1 == 1 {
+                            output.push(8 * i + 7 - j);
+                        }
                     }
                 }
+                output.sort();
+                Ok(output)
             }
-            output.sort();
-            Ok(output)
+            _ => Err(anyhow!("Error in b2p")),
         }
-        _ => Err(anyhow!("Error in b2p")),
     }
 }
 

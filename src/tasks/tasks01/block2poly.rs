@@ -51,4 +51,46 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn block2poly_task03() -> Result<()> {
+        let block: Value = json!({"block" : "AAAAAAAAAAAAAAAAAAAAAA==", "semantic" : "gcm"});
+        let coefficients: Vec<u8> = vec![];
+        assert_eq!(
+            block2poly(&block)?,
+            coefficients,
+            "Coefficients were: {:?}",
+            block2poly(&block)?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn block2poly_task04() -> Result<()> {
+        let block: Value = json!({"block" : "", "semantic" : "gcm"});
+        let coefficients: Vec<u8> = vec![];
+        assert_eq!(
+            block2poly(&block)?,
+            coefficients,
+            "Coefficients were: {:?}",
+            block2poly(&block)?
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn block2poly_task_empty_xex() -> Result<()> {
+        let block: Value = json!({"block" : "", "semantic" : "xex"});
+        let coefficients: Vec<u8> = vec![];
+        assert_eq!(
+            block2poly(&block)?,
+            coefficients,
+            "Coefficients were: {:?}",
+            block2poly(&block)?
+        );
+
+        Ok(())
+    }
 }
