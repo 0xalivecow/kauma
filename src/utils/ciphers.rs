@@ -1,4 +1,3 @@
-use std::io::BufRead;
 
 use anyhow::Result;
 use openssl::symm::{Cipher, Crypter, Mode};

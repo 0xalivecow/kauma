@@ -1,7 +1,4 @@
-use crate::utils::{
-    field::ByteArray,
-    poly::{b64_2_num, coefficient_to_binary, gfmul},
-};
+use crate::utils::poly::gfmul;
 
 use anyhow::Result;
 use base64::prelude::*;
@@ -24,7 +21,7 @@ pub fn gfmul_task(args: &Value) -> Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use std::str::FromStr;
+    
 
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;

@@ -34,7 +34,7 @@ pub fn sea128(args: &Value) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    
 
     use anyhow::Result;
     use serde_json::json;

@@ -1,4 +1,4 @@
-use crate::utils::poly::{b64_2_num, block_2_polynomial, get_coefficients};
+use crate::utils::poly::block_2_polynomial;
 use anyhow::Result;
 use base64::prelude::*;
 use serde_json::Value;
@@ -19,7 +19,7 @@ pub fn block2poly(val: &Value) -> Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use std::str::FromStr;
+    
 
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;

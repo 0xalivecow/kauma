@@ -8,7 +8,7 @@ use tasks01::{
     gfmul::gfmul_task,
     poly2block::poly2block,
     sea128::sea128,
-    xex::{self, fde_xex},
+    xex::{fde_xex},
 };
 
 use anyhow::{anyhow, Result};
