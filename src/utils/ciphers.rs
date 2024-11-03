@@ -164,6 +164,7 @@ pub fn gcm_encrypt_aes(
         &ghash(auth_key_h.clone(), ad, ciphertext.clone(), l_field.clone())?,
         auth_tag_xor,
     )?;
+    eprintln!("aes auth tag: {:001X?}", &auth_tag);
 
     Ok((ciphertext, auth_tag, l_field, auth_key_h))
 }
@@ -213,6 +214,7 @@ pub fn gcm_decrypt_aes(
     )?;
 
     let valid = auth_tag == tag;
+    eprintln!("aes auth tag: {:001X?}", auth_tag);
 
     Ok((plaintext, valid))
 }
@@ -328,24 +330,35 @@ pub fn ghash(
 ) -> Result<Vec<u8>> {
     let output: Vec<u8> = vec![0; 16];
 
+    eprintln!("{:?}", ad.len() as u8);
     eprintln!("{:?}", (ad.len() % 16) as u8);
     eprintln!("{:001X?}", ad);
 
     if ad.len() % 16 != 0 {
-        ad.append(vec![0u8; ad.len() % 16].as_mut());
+        ad.append(vec![0u8; 16 - (ad.len() % 16)].as_mut());
     }
 
     if ciphertext.len() % 16 != 0 {
-        ciphertext.append(vec![0u8; ciphertext.len() % 16].as_mut());
+        ciphertext.append(vec![0u8; 16 - (ciphertext.len() % 16)].as_mut());
     }
 
     eprintln!("{:001X?}", ad);
     eprintln!("{:001X?}", ciphertext);
 
-    let inter1 = xor_bytes(&output, ad)?;
-    let mut inter_loop = gfmul(inter1, auth_key_h.clone(), "gcm")?;
+    let mut ad_chunks = ad.chunks(16);
 
-    inter_loop = inter_loop;
+    eprintln!("Ad chunks before first next {:001X?}", ad_chunks);
+
+    let inter1 = xor_bytes(&output, ad_chunks.next().unwrap().to_vec())?;
+    let mut inter_loop = gfmul(inter1, auth_key_h.clone(), "gcm")?;
+    eprintln!("Ad chunks after first next {:001X?}", ad_chunks);
+
+    for chunk in ad_chunks {
+        eprintln!("Inside ad chunk loop");
+        eprintln!("Ad chunk in loop {:001X?}", chunk);
+        let inter2 = xor_bytes(&inter_loop, chunk.to_vec())?;
+        inter_loop = gfmul(inter2, auth_key_h.clone(), "gcm")?;
+    }
 
     let cipher_chunks = ciphertext.chunks(16);
 
@@ -357,7 +370,7 @@ pub fn ghash(
     let inter4 = xor_bytes(&inter_loop, l_field)?;
     inter_loop = gfmul(inter4, auth_key_h.clone(), "gcm")?;
 
-    eprintln!("GHASH auth tag: {}", BASE64_STANDARD.encode(&inter_loop));
+    eprintln!("GHASH auth tag: {:001X?}", inter_loop);
 
     Ok(inter_loop)
 }
@@ -453,6 +466,78 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_gcm_encrypt_aes_long_ad() -> Result<()> {
+        let nonce = BASE64_STANDARD.decode("yv66vvrO263eyviI")?;
+        let key = BASE64_STANDARD.decode("/v/pkoZlcxxtao+UZzCDCA==")?;
+        let plaintext = BASE64_STANDARD.decode(
+            "2TEyJfiEBuWlWQnFr/UmmoanqVMVNPfaLkwwPYoxinIcPAyVlWgJUy/PDiRJprUlsWrt9aoN5le6Y3s5",
+        )?;
+        let ad = BASE64_STANDARD.decode("/u36zt6tvu/+7frO3q2+76ut2tI=")?;
+
+        let (ciphertext, auth_tag, l_field, auth_key_h) =
+            gcm_encrypt_aes(nonce, key, plaintext, ad)?;
+
+        eprintln!(
+            "Cipher: {:001X?} \n Tag: {:001X?} \n L_Field: {:001X?} \n H: {:001X?}",
+            BASE64_STANDARD.encode(&ciphertext),
+            BASE64_STANDARD.encode(&auth_tag),
+            BASE64_STANDARD.encode(&l_field),
+            BASE64_STANDARD.encode(&auth_key_h)
+        );
+
+        assert_eq!(
+            BASE64_STANDARD.encode(ciphertext),
+            "QoMewiF3dCRLciG3hNDUnOOqIS8sAqTgNcF+IymsoS4h1RSyVGaTHH2PalqshKoFG6MLOWoKrJc9WOCR"
+        );
+        assert_eq!(BASE64_STANDARD.encode(auth_tag), "W8lPvDIhpduU+ula5xIaRw==");
+        assert_eq!(BASE64_STANDARD.encode(l_field), "AAAAAAAAAKAAAAAAAAAB4A==");
+        assert_eq!(
+            BASE64_STANDARD.encode(auth_key_h),
+            "uDtTNwi/U10KpuUpgNU7eA=="
+        );
+
+        Ok(())
+    }
+    /*
+        * TODO:Not sure if this case can really happen in our data
+
+        #[test]
+        fn test_gcm_encrypt_aes_long_0000() -> Result<()> {
+            let nonce = BASE64_STANDARD.decode(
+                "kxMiXfiEBuVVkJxa/1Jpqmp6lThTT32h5MMD0qMYpyjDwMlRVoCVOfzw4kKaa1JUFq7b9aDealemN7Ob",
+            )?;
+            let key = BASE64_STANDARD.decode("/v/pkoZlcxxtao+UZzCDCP7/6ZKGZXMcbWqPlGcwgwg=")?;
+            let plaintext = BASE64_STANDARD.decode(
+                "2TEyJfiEBuWlWQnFr/UmmoanqVMVNPfaLkwwPYoxinIcPAyVlWgJUy/PDiRJprUlsWrt9aoN5le6Y3s5",
+            )?;
+            let ad = BASE64_STANDARD.decode("/u36zt6tvu/+7frO3q2+76ut2tI=")?;
+
+            let (ciphertext, auth_tag, l_field, auth_key_h) =
+                gcm_encrypt_aes(nonce, key, plaintext, ad)?;
+
+            eprintln!(
+                "Cipher: {:001X?} \n Tag: {:001X?} \n L_Field: {:001X?} \n H: {:001X?}",
+                BASE64_STANDARD.encode(&ciphertext),
+                BASE64_STANDARD.encode(&auth_tag),
+                BASE64_STANDARD.encode(&l_field),
+                BASE64_STANDARD.encode(&auth_key_h)
+            );
+
+            assert_eq!(
+                BASE64_STANDARD.encode(ciphertext),
+                "Wo3vLwyeU/H3XXhTZZ4qIO6ysiqv3mQZoFirT290a/QPwMO3gPJERS2j6/HF2CzeokGJlyAO+C5Ern4/"
+            );
+            assert_eq!(BASE64_STANDARD.encode(auth_tag), "pEqCZu4cjrDItdTPWunxmg==");
+            assert_eq!(BASE64_STANDARD.encode(l_field), "AAAAAAAAAKAAAAAAAAAB4A==");
+            assert_eq!(
+                BASE64_STANDARD.encode(auth_key_h),
+                "rL7yBXm0uOvOiJushzLa1w=="
+            );
+
+            Ok(())
+        }
+    */
     #[test]
     fn test_gcm_encrypt_sea() -> Result<()> {
         let nonce = BASE64_STANDARD.decode("4gF+BtR3ku/PUQci")?;
