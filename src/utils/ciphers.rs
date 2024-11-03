@@ -1,9 +1,9 @@
 use std::{io::BufRead, process::Output};
 
-use anyhow::Result;
-use openssl::symm::{Cipher, Crypter, Mode};
-
 use crate::utils::{field::ByteArray, math::reverse_bits_in_bytevec, poly::gfmul};
+use anyhow::Result;
+use base64::prelude::*;
+use openssl::symm::{Cipher, Crypter, Mode};
 
 use super::math::xor_bytes;
 
@@ -168,6 +168,158 @@ pub fn gcm_encrypt_aes(
     Ok((ciphertext, auth_tag, l_field, auth_key_h))
 }
 
+pub fn gcm_decrypt_aes(
+    mut nonce: Vec<u8>,
+    key: Vec<u8>,
+    ciphertext: Vec<u8>,
+    ad: Vec<u8>,
+    tag: Vec<u8>,
+) -> Result<(Vec<u8>, bool)> {
+    let mut plaintext: Vec<u8> = vec![];
+
+    let mut counter: u32 = 1;
+    nonce.append(counter.to_be_bytes().to_vec().as_mut());
+    //nonce.append(0u8.to_le_bytes().to_vec().as_mut());
+    eprintln!("{:001X?}", nonce);
+
+    let auth_tag_xor = aes_128_encrypt(&key, &nonce)?;
+
+    let auth_key_h = aes_128_encrypt(&key, &0u128.to_be_bytes().to_vec())?;
+
+    let ciphertext_chunks: Vec<Vec<u8>> = ciphertext.chunks(16).map(|x| x.to_vec()).collect();
+
+    counter = 2;
+    for chunk in ciphertext_chunks {
+        nonce.drain(12..);
+        nonce.append(counter.to_be_bytes().to_vec().as_mut());
+
+        eprintln!("{:001X?}", nonce);
+
+        let inter1 = aes_128_encrypt(&key, &nonce)?;
+
+        let mut inter2 = xor_bytes(&inter1, chunk.clone())?;
+
+        plaintext.append(inter2.as_mut());
+        counter += 1;
+    }
+
+    let mut l_field: Vec<u8> = ((ad.len() * 8) as u64).to_be_bytes().to_vec();
+    let mut c_len: Vec<u8> = ((ciphertext.len() * 8) as u64).to_be_bytes().to_vec();
+    l_field.append(c_len.as_mut());
+
+    let auth_tag = xor_bytes(
+        &ghash(auth_key_h.clone(), ad, ciphertext.clone(), l_field.clone())?,
+        auth_tag_xor,
+    )?;
+
+    let valid = auth_tag == tag;
+
+    Ok((plaintext, valid))
+}
+
+pub fn gcm_encrypt_sea(
+    mut nonce: Vec<u8>,
+    key: Vec<u8>,
+    plaintext: Vec<u8>,
+    ad: Vec<u8>,
+) -> Result<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> {
+    let mut ciphertext: Vec<u8> = vec![];
+
+    let mut counter: u32 = 1;
+    nonce.append(counter.to_be_bytes().to_vec().as_mut());
+    //nonce.append(0u8.to_le_bytes().to_vec().as_mut());
+    eprintln!("{:001X?}", nonce);
+
+    let auth_tag_xor = sea_128_encrypt(&key, &nonce)?;
+
+    let auth_key_h = sea_128_encrypt(&key, &0u128.to_be_bytes().to_vec())?;
+
+    let plaintext_chunks: Vec<Vec<u8>> = plaintext.chunks(16).map(|x| x.to_vec()).collect();
+
+    counter = 2;
+    for chunk in plaintext_chunks {
+        nonce.drain(12..);
+        nonce.append(counter.to_be_bytes().to_vec().as_mut());
+
+        eprintln!("{:001X?}", nonce);
+
+        let inter1 = sea_128_encrypt(&key, &nonce)?;
+
+        let mut inter2 = xor_bytes(&inter1, chunk.clone())?;
+
+        ciphertext.append(inter2.as_mut());
+        counter += 1;
+    }
+
+    let mut l_field: Vec<u8> = ((ad.len() * 8) as u64).to_be_bytes().to_vec();
+    let mut c_len: Vec<u8> = ((ciphertext.len() * 8) as u64).to_be_bytes().to_vec();
+    l_field.append(c_len.as_mut());
+
+    let auth_tag = xor_bytes(
+        &ghash(auth_key_h.clone(), ad, ciphertext.clone(), l_field.clone())?,
+        auth_tag_xor,
+    )?;
+
+    Ok((ciphertext, auth_tag, l_field, auth_key_h))
+}
+
+pub fn gcm_decrypt_sea(
+    mut nonce: Vec<u8>,
+    key: Vec<u8>,
+    ciphertext: Vec<u8>,
+    ad: Vec<u8>,
+    tag: Vec<u8>,
+) -> Result<(Vec<u8>, bool)> {
+    let mut plaintext: Vec<u8> = vec![];
+
+    let mut counter: u32 = 1;
+    nonce.append(counter.to_be_bytes().to_vec().as_mut());
+    //nonce.append(0u8.to_le_bytes().to_vec().as_mut());
+    eprintln!("Nonce 1: {:001X?}", nonce);
+
+    let auth_tag_xor = sea_128_encrypt(&key, &nonce)?;
+
+    let auth_key_h = sea_128_encrypt(&key, &0u128.to_be_bytes().to_vec())?;
+
+    let plaintext_chunks: Vec<Vec<u8>> = ciphertext.chunks(16).map(|x| x.to_vec()).collect();
+
+    eprintln!("{:?}", plaintext_chunks);
+
+    counter = 2;
+    for chunk in plaintext_chunks {
+        eprintln!("Inside loop");
+
+        nonce.drain(12..);
+        nonce.append(counter.to_be_bytes().to_vec().as_mut());
+
+        eprintln!("Nonce 2: {:001X?}", nonce);
+
+        let inter1 = sea_128_encrypt(&key, &nonce)?;
+
+        let mut inter2 = xor_bytes(&inter1, chunk.clone())?;
+
+        plaintext.append(inter2.as_mut());
+        counter += 1;
+    }
+
+    let mut l_field: Vec<u8> = ((ad.len() * 8) as u64).to_be_bytes().to_vec();
+    let mut c_len: Vec<u8> = ((plaintext.len() * 8) as u64).to_be_bytes().to_vec();
+    l_field.append(c_len.as_mut());
+
+    eprintln!("Ciphertext: {}", BASE64_STANDARD.encode(&ciphertext));
+
+    let auth_tag = xor_bytes(
+        &ghash(auth_key_h.clone(), ad, ciphertext.clone(), l_field.clone())?,
+        auth_tag_xor,
+    )?;
+
+    eprintln!("sea dec auth tag: {}", BASE64_STANDARD.encode(&auth_tag));
+
+    let valid = auth_tag == tag;
+
+    Ok((plaintext, valid))
+}
+
 pub fn ghash(
     auth_key_h: Vec<u8>,
     mut ad: Vec<u8>,
@@ -204,6 +356,8 @@ pub fn ghash(
 
     let inter4 = xor_bytes(&inter_loop, l_field)?;
     inter_loop = gfmul(inter4, auth_key_h.clone(), "gcm")?;
+
+    eprintln!("GHASH auth tag: {}", BASE64_STANDARD.encode(&inter_loop));
 
     Ok(inter_loop)
 }
@@ -295,6 +449,88 @@ mod tests {
             BASE64_STANDARD.encode(auth_key_h),
             "Bu6ywbsUKlpmZXMQyuGAng=="
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_gcm_encrypt_sea() -> Result<()> {
+        let nonce = BASE64_STANDARD.decode("4gF+BtR3ku/PUQci")?;
+        let key = BASE64_STANDARD.decode("Xjq/GkpTSWoe3ZH0F+tjrQ==")?;
+        let plaintext = BASE64_STANDARD.decode("RGFzIGlzdCBlaW4gVGVzdA==")?;
+        let ad = BASE64_STANDARD.decode("QUQtRGF0ZW4=")?;
+
+        let (ciphertext, auth_tag, l_field, auth_key_h) =
+            gcm_encrypt_sea(nonce, key, plaintext, ad)?;
+
+        eprintln!(
+            "Cipher: {:001X?} \n Tag: {:001X?} \n L_Field: {:001X?} \n H: {:001X?}",
+            BASE64_STANDARD.encode(&ciphertext),
+            BASE64_STANDARD.encode(&auth_tag),
+            BASE64_STANDARD.encode(&l_field),
+            BASE64_STANDARD.encode(&auth_key_h)
+        );
+
+        assert_eq!(
+            BASE64_STANDARD.encode(ciphertext),
+            "0cI/Wg4R3URfrVFZ0hw/vg=="
+        );
+        assert_eq!(BASE64_STANDARD.encode(auth_tag), "ysDdzOSnqLH0MQ+Mkb23gw==");
+        assert_eq!(BASE64_STANDARD.encode(l_field), "AAAAAAAAAEAAAAAAAAAAgA==");
+        assert_eq!(
+            BASE64_STANDARD.encode(auth_key_h),
+            "xhFcAUT66qWIpYz+Ch5ujw=="
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_gcm_decrypt_aes() -> Result<()> {
+        let nonce = BASE64_STANDARD.decode("4gF+BtR3ku/PUQci")?;
+        let key = BASE64_STANDARD.decode("Xjq/GkpTSWoe3ZH0F+tjrQ==")?;
+        let ciphertext = BASE64_STANDARD.decode("ET3RmvH/Hbuxba63EuPRrw==")?;
+        let ad = BASE64_STANDARD.decode("QUQtRGF0ZW4=")?;
+        let tag = BASE64_STANDARD.decode("Mp0APJb/ZIURRwQlMgNN/w==")?;
+
+        let (plaintext, valid) = gcm_decrypt_aes(nonce, key, ciphertext, ad, tag)?;
+
+        eprintln!(
+            "Cipher: {:001X?} \n Valids: {:001X?}",
+            BASE64_STANDARD.encode(&plaintext),
+            &valid,
+        );
+
+        assert_eq!(
+            BASE64_STANDARD.encode(plaintext),
+            "RGFzIGlzdCBlaW4gVGVzdA=="
+        );
+        assert_eq!(valid, true);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_gcm_decrypt_sea() -> Result<()> {
+        let nonce = BASE64_STANDARD.decode("4gF+BtR3ku/PUQci")?;
+        let key = BASE64_STANDARD.decode("Xjq/GkpTSWoe3ZH0F+tjrQ==")?;
+        let ciphertext = BASE64_STANDARD.decode("0cI/Wg4R3URfrVFZ0hw/vg==")?;
+        let ad = BASE64_STANDARD.decode("QUQtRGF0ZW4=")?;
+        let tag = BASE64_STANDARD.decode("ysDdzOSnqLH0MQ+Mkb23gw==")?;
+
+        let (plaintext, valid) = gcm_decrypt_sea(nonce, key, ciphertext, ad, tag)?;
+
+        eprintln!(
+            "Plaintext: {:001X?} \n Valid: {:001X?}",
+            BASE64_STANDARD.encode(&plaintext),
+            &valid,
+        );
+
+        assert_eq!(
+            BASE64_STANDARD.encode(plaintext),
+            "RGFzIGlzdCBlaW4gVGVzdA=="
+        );
+        assert_eq!(valid, true);
 
         Ok(())
     }

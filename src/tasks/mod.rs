@@ -8,7 +8,7 @@ use crate::utils::{
 };
 use tasks01::{
     block2poly::block2poly,
-    gcm::gcm_encrypt,
+    gcm::{gcm_decrypt, gcm_encrypt},
     gfmul::gfmul_task,
     poly2block::poly2block,
     sea128::sea128,
@@ -68,6 +68,14 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
 
             Ok(json)
         }
+        "gcm_decrypt" => {
+            let (plaintext, valid) = gcm_decrypt(args)?;
+            let out_plain = BASE64_STANDARD.encode(&plaintext);
+            let json = json!({ "authentic" : valid, "plaintext" : out_plain});
+
+            Ok(json)
+        }
+
         _ => Err(anyhow!(
             "Fatal. No compatible action found. Json data was {:?}. Arguments were; {:?}",
             testcase,
@@ -192,6 +200,62 @@ mod tests {
         "tag": "Mp0APJb/ZIURRwQlMgNN/w==",
         "L": "AAAAAAAAAEAAAAAAAAAAgA==",
         "H": "Bu6ywbsUKlpmZXMQyuGAng=="
+        }}});
+
+        assert_eq!(
+            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(expected).unwrap()
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_task_gcm_encrypt_sea_case() -> Result<()> {
+        let json = fs::read_to_string("test_json/gcm_encrypt_sea.json").unwrap();
+        let parsed = parse_json(json).unwrap();
+
+        let expected = json!({ "responses" : { "b856d760-023d-4b00-bad2-15d2b6da22fe" : {
+        "ciphertext": "0cI/Wg4R3URfrVFZ0hw/vg==",
+        "tag": "ysDdzOSnqLH0MQ+Mkb23gw==",
+        "L": "AAAAAAAAAEAAAAAAAAAAgA==",
+        "H": "xhFcAUT66qWIpYz+Ch5ujw=="
+        }}});
+
+        assert_eq!(
+            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(expected).unwrap()
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_task_gcm_decrypt_aes_case() -> Result<()> {
+        let json = fs::read_to_string("test_json/gcm_decrypt_aes.json").unwrap();
+        let parsed = parse_json(json).unwrap();
+
+        let expected = json!({ "responses" : { "b856d760-023d-4b00-bad2-15d2b6da22fe" : {
+        "plaintext": "RGFzIGlzdCBlaW4gVGVzdA==",
+        "authentic": true,
+        }}});
+
+        assert_eq!(
+            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(expected).unwrap()
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_task_gcm_decrypt_sea_case() -> Result<()> {
+        let json = fs::read_to_string("test_json/gcm_decrypt_sea.json").unwrap();
+        let parsed = parse_json(json).unwrap();
+
+        let expected = json!({ "responses" : { "b856d760-023d-4b00-bad2-15d2b6da22fe" : {
+        "plaintext": "RGFzIGlzdCBlaW4gVGVzdA==",
+        "authentic": true,
         }}});
 
         assert_eq!(
