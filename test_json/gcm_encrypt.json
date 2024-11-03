@@ -1,0 +1,14 @@
+{
+  "testcases": {
+    "b856d760-023d-4b00-bad2-15d2b6da22fe": {
+      "action": "gcm_encrypt",
+      "arguments": {
+        "algorithm": "aes128",
+        "nonce": "4gF+BtR3ku/PUQci",
+        "key": "Xjq/GkpTSWoe3ZH0F+tjrQ==",
+        "plaintext": "RGFzIGlzdCBlaW4gVGVzdA==",
+        "ad": "QUQtRGF0ZW4="
+      }
+    }
+  }
+}

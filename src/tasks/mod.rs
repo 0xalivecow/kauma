@@ -1,10 +1,14 @@
 use base64::prelude::*;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, env::args};
 
-use crate::utils::parse::{Responses, Testcase, Testcases};
+use crate::utils::{
+    ciphers::gcm_encrypt_aes,
+    parse::{Responses, Testcase, Testcases},
+};
 use tasks01::{
     block2poly::block2poly,
+    gcm::gcm_encrypt,
     gfmul::gfmul_task,
     poly2block::poly2block,
     sea128::sea128,
@@ -50,6 +54,17 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
         "xex" => {
             let result = BASE64_STANDARD.encode(fde_xex(args)?);
             let json = json!({"output" : result});
+
+            Ok(json)
+        }
+        "gcm_encrypt" => {
+            let (ciphertext, auth_tag, l_field, auth_key_h) = gcm_encrypt(args)?;
+            let out_ciph = BASE64_STANDARD.encode(&ciphertext);
+            let out_tag = BASE64_STANDARD.encode(&auth_tag);
+            let out_l = BASE64_STANDARD.encode(&l_field);
+            let out_h = BASE64_STANDARD.encode(&auth_key_h);
+
+            let json = json!({"ciphertext" : out_ciph, "tag" : out_tag, "L" : out_l, "H" : out_h});
 
             Ok(json)
         }
@@ -158,6 +173,26 @@ mod tests {
         "0192d428-3913-762b-a702-d14828eae1f8": {"output": "mHAVhRCKPAPx0BcufG5BZ4+/CbneMV/gRvqK5rtLe0OJgpDU5iT7z2P0R7gEeRDO"},
         "0192d428-3913-7168-a3bb-69c258c74dc1": {"output": "SGV5IHdpZSBrcmFzcyBkYXMgZnVua3Rpb25pZXJ0IGphIG9mZmVuYmFyIGVjaHQu"}
         }});
+
+        assert_eq!(
+            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(expected).unwrap()
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_task_gcm_encrypt_aes_case() -> Result<()> {
+        let json = fs::read_to_string("test_json/gcm_encrypt.json").unwrap();
+        let parsed = parse_json(json).unwrap();
+
+        let expected = json!({ "responses" : { "b856d760-023d-4b00-bad2-15d2b6da22fe" : {
+        "ciphertext": "ET3RmvH/Hbuxba63EuPRrw==",
+        "tag": "Mp0APJb/ZIURRwQlMgNN/w==",
+        "L": "AAAAAAAAAEAAAAAAAAAAgA==",
+        "H": "Bu6ywbsUKlpmZXMQyuGAng=="
+        }}});
 
         assert_eq!(
             serde_json::to_value(task_distrubute(&parsed)?).unwrap(),

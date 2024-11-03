@@ -285,10 +285,16 @@ mod tests {
             BASE64_STANDARD.encode(&auth_key_h)
         );
 
-        assert_eq!(BASE64_STANDARD.encode(ciphertext), "");
-        assert_eq!(BASE64_STANDARD.encode(auth_tag), "");
-        assert_eq!(BASE64_STANDARD.encode(l_field), "");
-        assert_eq!(BASE64_STANDARD.encode(auth_key_h), "");
+        assert_eq!(
+            BASE64_STANDARD.encode(ciphertext),
+            "ET3RmvH/Hbuxba63EuPRrw=="
+        );
+        assert_eq!(BASE64_STANDARD.encode(auth_tag), "Mp0APJb/ZIURRwQlMgNN/w==");
+        assert_eq!(BASE64_STANDARD.encode(l_field), "AAAAAAAAAEAAAAAAAAAAgA==");
+        assert_eq!(
+            BASE64_STANDARD.encode(auth_key_h),
+            "Bu6ywbsUKlpmZXMQyuGAng=="
+        );
 
         Ok(())
     }
