@@ -1,4 +1,5 @@
 pub mod block2poly;
+pub mod gcm;
 pub mod gfmul;
 pub mod poly2block;
 pub mod sea128;
