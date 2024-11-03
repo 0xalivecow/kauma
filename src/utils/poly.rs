@@ -4,7 +4,7 @@ use base64::prelude::*;
 use serde_json::Value;
 use std::{str::FromStr, u128, u8, usize};
 
-use super::field;
+use super::{field, math::reverse_bits_in_bytevec};
 pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
 pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
@@ -17,15 +17,20 @@ pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>, semantic: &str) -> Result<Vec<u8>
     let mut poly2: ByteArray = ByteArray(poly_b);
     poly2.0.push(0x00);
 
+    if semantic == "gcm" {
+        poly1.reverse_bits_in_bytevec();
+        poly2.reverse_bits_in_bytevec();
+    }
+
     let mut result: ByteArray = ByteArray(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
     if poly2.LSB_is_one() {
         result.xor_byte_arrays(&poly1);
     }
-    poly2.right_shift(semantic)?;
+    poly2.right_shift("xex")?;
 
     while !poly2.is_empty() {
-        poly1.left_shift(semantic)?;
+        poly1.left_shift("xex")?;
 
         if poly1.msb_is_one() {
             poly1.xor_byte_arrays(&red_poly_bytes);
@@ -35,10 +40,14 @@ pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>, semantic: &str) -> Result<Vec<u8>
             result.xor_byte_arrays(&poly1);
         }
 
-        poly2.right_shift(semantic)?;
+        poly2.right_shift("xex")?;
     }
 
     result.0.remove(16);
+
+    if semantic == "gcm" {
+        result.reverse_bits_in_bytevec();
+    }
 
     Ok(result.0)
 }

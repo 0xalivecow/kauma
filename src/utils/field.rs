@@ -96,6 +96,10 @@ impl ByteArray {
         }
         true
     }
+
+    pub fn reverse_bits_in_bytevec(&mut self) {
+        self.0 = self.0.iter_mut().map(|byte| byte.reverse_bits()).collect();
+    }
 }
 
 #[cfg(test)]
