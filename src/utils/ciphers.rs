@@ -334,7 +334,7 @@ pub fn ghash(
     eprintln!("{:?}", (ad.len() % 16) as u8);
     eprintln!("{:001X?}", ad);
 
-    if ad.len() % 16 != 0 {
+    if ad.len() % 16 != 0 || ad.is_empty() {
         ad.append(vec![0u8; 16 - (ad.len() % 16)].as_mut());
     }
 
