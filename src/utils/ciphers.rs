@@ -7,6 +7,9 @@ use openssl::symm::{Cipher, Crypter, Mode};
 
 use super::math::xor_bytes;
 
+/// AES ENCRYPT
+/// Function to perform encryption with AES ECB mode
+/// Function does not use padding for blocks
 pub fn aes_128_encrypt(key: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
     let mut encrypter = Crypter::new(Cipher::aes_128_ecb(), Mode::Encrypt, &key, None)?;
     encrypter.pad(false);
@@ -22,6 +25,9 @@ pub fn aes_128_encrypt(key: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
     Ok(ciphertext)
 }
 
+/// AES DECRPYT
+/// Function to perform decryption with AES ECB mode
+/// Function does not use padding for blocks    
 pub fn aes_128_decrypt(key: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
     let mut decrypter = Crypter::new(Cipher::aes_128_ecb(), Mode::Decrypt, key, None)?;
     decrypter.pad(false);
@@ -39,8 +45,14 @@ pub fn aes_128_decrypt(key: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
     Ok(plaintext)
 }
 
+/// SEA ENCRYPT
+/// Function to perform sea encrption.
+/// At its core, the function ses the AES ENCRYPT, but then xors with a constant value of:
+/// 0xc0ffeec0ffeec0ffeec0ffeec0ffee11
 pub fn sea_128_encrypt(key: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
+    // Constant value used for XOR
     let xor_val: u128 = 0xc0ffeec0ffeec0ffeec0ffeec0ffee11;
+
     let sea128_out = xor_bytes(
         &aes_128_encrypt(key, input)?,
         xor_val.to_be_bytes().to_vec(),
@@ -48,38 +60,30 @@ pub fn sea_128_encrypt(key: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
     Ok(sea128_out)
 }
 
+/// SEA DECRYPT
+/// Function to perform sea decryption.
+/// At its core, the function ses the AES DECRYPT, but then xors with a constant value of:
+/// 0xc0ffeec0ffeec0ffeec0ffeec0ffee11
 pub fn sea_128_decrypt(key: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
+    // Constant value used for XOR
     let xor_val: u128 = 0xc0ffeec0ffeec0ffeec0ffeec0ffee11;
 
     let intermediate = xor_bytes(input, xor_val.to_be_bytes().to_vec())?;
     Ok(aes_128_decrypt(&key, &intermediate)?)
 }
 
+/// Function to perform xex encryption.
+/// The function performs the encryption for XEX on the basis of the SEA ENCRYPT.
 pub fn xex_encrypt(mut key: Vec<u8>, tweak: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
     let key2: Vec<u8> = key.split_off(16);
-    //let key1: ByteArray = ByteArray(vec![key_parts[0]]);
-    //let key2: ByteArray = ByteArray(vec![key_parts[1]]);
 
     let input_chunks: Vec<Vec<u8>> = input.chunks(16).map(|x| x.to_vec()).collect();
 
     let mut output: Vec<u8> = vec![];
-    //assert!(key.len() % 16 == 0, "Failure: Key len {}", key.len());
-    //assert!(key2.len() % 16 == 0, "Failure: Key2 len {}", key2.len());
     let mut tweak_block: ByteArray = ByteArray(sea_128_encrypt(&key2, tweak)?);
-
-    //dbg!("input_chunks: {:001X?}", &input_chunks);
 
     for chunk in input_chunks {
         let plaintext_intermediate = xor_bytes(&tweak_block.0, chunk)?;
-        /*
-                assert!(
-                    plaintext_intermediate.len() % 16 == 0,
-                    "Failure: plaintext_intermediate len was {}",
-                    plaintext_intermediate.len()
-                );
-        */
-        //assert!(key.len() % 16 == 0, "Failure: Key len {}", key.len());
-        //assert!(key2.len() % 16 == 0, "Failure: Key2 len {}", key2.len());
         let cypher_block_intermediate = sea_128_encrypt(&key, &plaintext_intermediate)?;
         let mut cypher_block = xor_bytes(&tweak_block.0, cypher_block_intermediate)?;
         output.append(cypher_block.as_mut());
@@ -91,28 +95,13 @@ pub fn xex_encrypt(mut key: Vec<u8>, tweak: &Vec<u8>, input: &Vec<u8>) -> Result
 
 pub fn xex_decrypt(mut key: Vec<u8>, tweak: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
     let key2: Vec<u8> = key.split_off(16);
-    //let key1: ByteArray = ByteArray(vec![key_parts[0]]);
-    //let key2: ByteArray = ByteArray(vec![key_parts[1]]);
-
     let input_chunks: Vec<Vec<u8>> = input.chunks(16).map(|x| x.to_vec()).collect();
 
     let mut output: Vec<u8> = vec![];
-    //assert!(key.len() % 16 == 0, "Failure: Key len {}", key.len());
-    //assert!(key2.len() % 16 == 0, "Failure: Key2 len {}", key2.len());
     let mut tweak_block: ByteArray = ByteArray(sea_128_encrypt(&key2, tweak)?);
 
     for chunk in input_chunks {
         let cyphertext_intermediate = xor_bytes(&tweak_block.0, chunk)?;
-
-        /*
-        assert!(
-            cyphertext_intermediate.len() % 16 == 0,
-            "Failure: plaintext_intermediate len was {}",
-            cyphertext_intermediate.len()
-        );
-        assert!(key.len() % 16 == 0, "Failure: Key len {}", key.len());
-        assert!(key2.len() % 16 == 0, "Failure: Key2 len {}", key2.len());
-        */
         let plaintext_block_intermediate = sea_128_decrypt(&key, &cyphertext_intermediate)?;
         let mut cypher_block = xor_bytes(&tweak_block.0, plaintext_block_intermediate)?;
         output.append(cypher_block.as_mut());
@@ -136,6 +125,7 @@ pub fn gcm_encrypt_aes(
     eprintln!("{:001X?}", nonce);
 
     let auth_tag_xor = aes_128_encrypt(&key, &nonce)?;
+    eprintln!("Y0 {:001X?}", auth_tag_xor);
 
     let auth_key_h = aes_128_encrypt(&key, &0u128.to_be_bytes().to_vec())?;
 
