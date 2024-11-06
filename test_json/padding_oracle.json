@@ -1,0 +1,13 @@
+{
+  "testcases": {
+    "254eaee7-05fd-4e0d-8292-9b658a852245": {
+      "action": "padding_oracle",
+      "arguments": {
+        "hostname": "localhost",
+        "port": 1337,
+        "iv": "AAAAAAAAAAAAAAAAAAAAAA==",
+        "ciphertext": "QENCRURHRklIS0pNTE9OUQAAAAAAAAAASUlJSUlJSUk="
+      }
+    }
+  }
+}
