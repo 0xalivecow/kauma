@@ -10,6 +10,7 @@ use tasks01::{
     block2poly::block2poly,
     gcm::{gcm_decrypt, gcm_encrypt},
     gfmul::gfmul_task,
+    pad_oracle::padding_oracle,
     poly2block::poly2block,
     sea128::sea128,
     xex::{self, fde_xex},
@@ -75,7 +76,13 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
 
             Ok(json)
         }
+        "padding_oracle" => {
+            let plaintext = padding_oracle(args)?;
+            let out_plain = BASE64_STANDARD.encode(&plaintext);
+            let json = json!({"plaintext" : out_plain});
 
+            Ok(json)
+        }
         _ => Err(anyhow!(
             "Fatal. No compatible action found. Json data was {:?}. Arguments were; {:?}",
             testcase,

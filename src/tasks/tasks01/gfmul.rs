@@ -108,4 +108,24 @@ mod tests {
         );
         Ok(())
     }
+
+    #[test]
+    fn gfmul_task01_gcm() -> Result<()> {
+        let args: Value = json!({"a": "AAAAAAAAAAAAAAAQBAAAAA==", "b": "IAAAAAAAAACAAAAAAAAAAA=="});
+
+        let poly1_text: String = serde_json::from_value(args["a"].clone())?;
+        let poly_a = BASE64_STANDARD.decode(poly1_text)?;
+
+        let poly2_text: String = serde_json::from_value(args["b"].clone())?;
+        let poly_b = BASE64_STANDARD.decode(poly2_text)?;
+
+        let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b, "gcm")?);
+
+        assert_eq!(
+            result, "hSQAAAAAAAAAAAAAAAAAAA==",
+            "Failure. Calulated result was: {}",
+            result
+        );
+        Ok(())
+    }
 }
