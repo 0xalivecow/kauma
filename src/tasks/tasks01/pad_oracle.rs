@@ -77,10 +77,36 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
 
             // extract valid position
             let valid_val = buf.iter().position(|&r| r == 0x01).expect("No valid found") as u8;
-            eprintln!("Valid value found: {:02X?}", valid_val);
-
+            //eprintln!("Valid value found: {:02X?}", valid_val);
             // Craft next attack vector padding; 0x01, 0x02, ...
             attack_counter[i as usize] = valid_val;
+
+            // Check for edgecase
+            if i == 15 {
+                let mut check_q_block: Vec<u8> = vec![0; 16];
+                check_q_block[15] = attack_counter[15] ^ (15 - i as u8);
+                check_q_block[14] = !check_q_block[15];
+
+                stream.write_all(&[0x01, 0x00])?;
+                stream.write_all(&check_q_block)?;
+                let mut buf = [0u8; 0x01];
+                stream.read(&mut buf)?;
+
+                if buf == [0x01] {
+                    eprintln!("Valid padding");
+                } else {
+                    eprintln!("Invalid padding");
+                    // Search for second hit
+                    let valid_val = buf
+                        .iter()
+                        .rev()
+                        .position(|&r| r == 0x01)
+                        .expect("No valid found") as u8;
+                    eprintln!("Valid value found: {:02X?}", valid_val);
+                    // Craft next attack vector padding; 0x01, 0x02, ...
+                    attack_counter[i as usize] = valid_val;
+                }
+            }
 
             if chunk_counter + 1 < cipher_chunks.len() {
                 //eprintln!("XOR Next Ciph block");
@@ -111,6 +137,7 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
 
                 attack_counter[pos as usize] = intermediate ^ ((15 - i as u8 + 1) + 1);
             }
+
             stream.flush()?;
 
             // Write plaintext
