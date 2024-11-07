@@ -40,7 +40,7 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
         let q_block_count: u16 = 255;
 
         //Send the first ciphertext chunk
-        eprintln!("Sending Ciphertext chunk: {:002X?}", chunk);
+        //eprintln!("Sending Ciphertext chunk: {:002X?}", chunk);
         stream.flush()?;
         stream.write_all(&chunk)?;
         stream.flush()?;
@@ -56,15 +56,19 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
             //eprintln!("L_msg sent");
 
             // Generate attack blocks
+            //  TODO: Collect all and send in one
+            let mut payload: Vec<u8> = vec![];
             for j in 0..q_block_count {
                 // Next byte
                 //eprintln!("Sending attack block: {:02X?}", attack_counter);
 
                 //thread::sleep(Duration::from_millis(1000));
-                stream.write_all(&attack_counter)?;
-                stream.flush()?;
+                payload.append(attack_counter.clone().as_mut());
                 attack_counter[i as usize] += 1;
             }
+
+            stream.write_all(&payload)?;
+            stream.flush()?;
 
             // Read server response
             let mut buf = [0u8; 0xFF];
@@ -73,19 +77,19 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
 
             // extract valid position
             let valid_val = buf.iter().position(|&r| r == 0x01).expect("No valid found") as u8;
-            //eprintln!("Valid value found: {:02X?}", valid_val);
+            eprintln!("Valid value found: {:02X?}", valid_val);
 
             // Craft next attack vector padding; 0x01, 0x02, ...
             attack_counter[i as usize] = valid_val;
 
             if chunk_counter + 1 < cipher_chunks.len() {
-                eprintln!("XOR Next Ciph block");
+                //eprintln!("XOR Next Ciph block");
                 plaintext.push(
                     cipher_chunks[chunk_counter + 1][i]
                         ^ (attack_counter[i as usize] ^ (15 - i as u8 + 1)),
                 );
             } else {
-                eprintln!("XOR IV");
+                //seprintln!("XOR IV");
 
                 plaintext.push(iv[i] ^ (attack_counter[i as usize] ^ (15 - i as u8 + 1)));
             }
