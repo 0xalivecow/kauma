@@ -39,7 +39,7 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
 
         // Amount of q blocks to send to server.
         // TODO:: May be increased via function
-        let q_block_count: u16 = 255;
+        let q_block_count: u16 = 256;
 
         //Send the first ciphertext chunk
         //eprintln!("Sending Ciphertext chunk: {:002X?}", chunk);
@@ -74,7 +74,7 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
             stream.flush()?;
 
             // Read server response
-            let mut server_q_resp = [0u8; 0xFF];
+            let mut server_q_resp = [0u8; 256];
             stream.read_exact(&mut server_q_resp)?;
             //eprintln!("{:02X?}", buf);
 
@@ -82,7 +82,7 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
             let valid_val = server_q_resp
                 .iter()
                 .position(|&r| r == 0x01)
-                .expect("No valid found") as u8;
+                .expect("No valid found in main loop") as u8;
             //eprintln!("Valid value found: {:02X?}", valid_val);
             // Craft next attack vector padding; 0x01, 0x02, ...
             attack_counter[i as usize] = valid_val;
@@ -90,8 +90,8 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
             // Check for edgecase
             if i == 15 {
                 let mut check_q_block: Vec<u8> = vec![0; 16];
-                check_q_block[15] = attack_counter[15] ^ (15 - i as u8);
-                check_q_block[14] = check_q_block[15].reverse_bits();
+                check_q_block[15] = attack_counter[15];
+                check_q_block[14] = !check_q_block[15];
 
                 stream.write_all(&[0x01, 0x00])?;
                 stream.write_all(&check_q_block)?;
@@ -103,11 +103,12 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
                 } else {
                     eprintln!("Invalid padding");
                     // Search for second hit
-                    let valid_val = server_q_resp
-                        .iter()
-                        .rev()
-                        .position(|&r| r == 0x01)
-                        .expect("No valid found") as u8;
+                    let valid_val = (255
+                        - server_q_resp
+                            .iter()
+                            .rev()
+                            .position(|&r| r == 0x01)
+                            .expect("No valid found") as u8);
                     eprintln!("Valid value found: {:02X?}", valid_val);
                     // Craft next attack vector padding; 0x01, 0x02, ...
                     attack_counter[i as usize] = valid_val;
