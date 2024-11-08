@@ -1,7 +1,59 @@
-use anyhow::{anyhow, Ok, Result};
-use base64::Engine;
+use std::ops::{Add, Mul};
 
-use super::poly::gfmul;
+use anyhow::{anyhow, Ok, Result};
+use base64::prelude::*;
+
+use super::{math::xor_bytes, poly::gfmul};
+
+#[derive(Debug)]
+pub struct FieldElement {
+    polynomial: Vec<u8>,
+}
+
+impl FieldElement {
+    pub const IRREDUCIBLE_POLYNOMIAL: [u8; 17] = [
+        87, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01,
+    ];
+
+    pub const fn new(polynomial: Vec<u8>) -> Self {
+        Self { polynomial }
+    }
+
+    pub fn mul(&self, poly_a: Vec<u8>, poly_b: Vec<u8>) -> Result<Vec<u8>> {
+        gfmul(poly_a, poly_b, "gcm")
+    }
+}
+
+impl Mul for FieldElement {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        FieldElement::new(
+            gfmul(self.polynomial, rhs.polynomial, "gcm").expect("Error during multiplication"),
+        )
+    }
+}
+
+impl Add for FieldElement {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        FieldElement::new(xor_bytes(&self.polynomial, rhs.polynomial).expect("Error in poly add"))
+    }
+}
+
+impl AsRef<[u8]> for FieldElement {
+    fn as_ref(&self) -> &[u8] {
+        &self.polynomial.as_ref()
+    }
+}
+
+/*
+impl From<Vec<u8>> for FieldElement {
+    fn from(item: Vec<u8>) -> Self {
+        FieldElement { bytes: item }
+    }
+}
+*/
 
 #[derive(Debug)]
 pub struct ByteArray(pub Vec<u8>);
@@ -105,6 +157,7 @@ impl ByteArray {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use base64::prelude::*;
     use std::fs;
 
     #[test]
@@ -198,5 +251,16 @@ mod tests {
         byte_array.xor_byte_arrays(&byte_array2);
 
         assert_eq!(byte_array.0, vec![0x55, 0x55]);
+    }
+
+    #[test]
+    fn test_field_add_01() {
+        let element1: FieldElement =
+            FieldElement::new(BASE64_STANDARD.decode("NeverGonnaGiveYouUpAAA==").unwrap());
+        let element2: FieldElement =
+            FieldElement::new(BASE64_STANDARD.decode("KryptoanalyseAAAAAAAAA==").unwrap());
+        let sum = element2 + element1;
+
+        assert_eq!(BASE64_STANDARD.encode(sum), "H1d3GuyA9/0OxeYouUpAAA==");
     }
 }
