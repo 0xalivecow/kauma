@@ -1,6 +1,6 @@
 use std::{
     env::args,
-    ops::{Add, Mul},
+    ops::{Add, BitXor, Mul},
 };
 
 use anyhow::{anyhow, Ok, Result};
@@ -73,9 +73,13 @@ impl Mul for Polynomial {
 impl Add for Polynomial {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
-        FieldElement::new(
-            xor_bytes(&self.field_element, rhs.field_element).expect("Error in poly add"),
-        )
+        for i in 0..self.polynomial.len() {
+            for j in 0..rhs.polynomial.len() {
+                polynomial[i + j] = &polynomial[i + j]
+                    + &(self.polynomial.get(i).unwrap() * rhs.polynomial.get(j).unwrap());
+            }
+        }
+        Polynomial::new(polynomial)
     }
 }
 
@@ -168,6 +172,14 @@ impl Clone for FieldElement {
         }
     }
 }
+
+/*
+impl BitXor for FieldElement {
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        FieldElement
+    }
+}
+*/
 
 /*
 impl From<Vec<u8>> for FieldElement {
