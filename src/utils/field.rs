@@ -52,6 +52,42 @@ impl Polynomial {
 
         output
     }
+
+    pub fn pow(&self, mut exponent: u128) -> Polynomial {
+        if exponent == 0 {
+            // Return polynomial with coefficient 1
+            return Polynomial::new(vec![FieldElement::new(vec![1])]);
+        }
+
+        let base = self.clone();
+        let mut result = base.clone();
+        exponent -= 1; // Subtract 1 because we already set result to base
+
+        while exponent > 0 {
+            result = result * base.clone();
+            exponent -= 1;
+        }
+
+        result
+    }
+    /*
+    pub fn to_b64(&self) -> String {
+        let mut output: Vec<String> = vec![];
+        for coeff in self.polynomial {
+            output.push(BASE64_STANDARD.encode(coeff));
+        }
+
+        output
+    }
+    */
+}
+
+impl Clone for Polynomial {
+    fn clone(&self) -> Self {
+        Polynomial {
+            polynomial: self.polynomial.clone(),
+        }
+    }
 }
 
 impl Mul for Polynomial {
@@ -70,9 +106,11 @@ impl Mul for Polynomial {
     }
 }
 
-impl Add for Polynomial {
-    type Output = Self;
-    fn add(self, rhs: Self) -> Self::Output {
+impl Mul for &Polynomial {
+    type Output = Polynomial;
+    fn mul(self, rhs: Self) -> Self::Output {
+        let mut polynomial: Vec<FieldElement> =
+            vec![FieldElement::new(vec![0; 16]); self.polynomial.len() + rhs.polynomial.len() - 1];
         for i in 0..self.polynomial.len() {
             for j in 0..rhs.polynomial.len() {
                 polynomial[i + j] = &polynomial[i + j]
@@ -83,6 +121,40 @@ impl Add for Polynomial {
     }
 }
 
+impl Add for Polynomial {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        let mut polynomial: Vec<FieldElement>;
+
+        if self.polynomial.len() > rhs.polynomial.len() {
+            polynomial = self.polynomial.clone();
+            for i in 0..rhs.polynomial.len() {
+                polynomial[i] = polynomial[i].clone() + rhs.polynomial[i].clone();
+            }
+        } else {
+            polynomial = rhs.polynomial.clone();
+            for i in 0..self.polynomial.len() {
+                polynomial[i] = polynomial[i].clone() + self.polynomial[i].clone();
+            }
+        }
+
+        Polynomial::new(polynomial)
+    }
+}
+
+impl AsRef<[FieldElement]> for Polynomial {
+    fn as_ref(&self) -> &[FieldElement] {
+        &self.polynomial
+    }
+}
+
+/*
+impl AsRef<[u8]> for Polynomial {
+    fn as_ref(&self) -> &[u8] {
+        &self.polynomial
+    }
+}
+*/
 /*
 impl Add for Polynomial {
     type Output = Self;
@@ -116,6 +188,10 @@ impl FieldElement {
 
     pub fn mul(&self, poly_a: Vec<u8>, poly_b: Vec<u8>) -> Result<Vec<u8>> {
         gfmul(poly_a, poly_b, "gcm")
+    }
+
+    pub fn to_b64(&self) -> String {
+        BASE64_STANDARD.encode(&self.field_element)
     }
 }
 
@@ -170,6 +246,19 @@ impl Clone for FieldElement {
         FieldElement {
             field_element: self.field_element.clone(),
         }
+    }
+}
+
+impl BitXor for FieldElement {
+    type Output = Self;
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        let result: Vec<u8> = self
+            .field_element
+            .iter()
+            .zip(rhs.field_element.iter())
+            .map(|(&x1, &x2)| x1 ^ x2)
+            .collect();
+        FieldElement::new(result)
     }
 }
 
@@ -424,7 +513,15 @@ mod tests {
 
         let sum = element2 + element1;
 
-        assert_eq!(BASE64_STANDARD.encode(sum), "OZuIncPAGEp4tYouDownAA==");
+        assert_eq!(
+            sum.to_c_array(),
+            vec![
+                "H1d3GuyA9/0OxeYouUpAAA==",
+                "OZuIncPAGEp4tYouDownAA==",
+                "NeverGonnaRunAroundAAA==",
+                "AndDesertYouAAAAAAAAAA=="
+            ]
+        );
     }
 
     #[test]
@@ -442,9 +539,41 @@ mod tests {
 
         let result = element1 * element2;
 
-        eprintln!("Result = {:?}", result.to_c_array());
+        assert_eq!(
+            result.to_c_array(),
+            vec![
+                "MoAAAAAAAAAAAAAAAAAAAA==",
+                "sUgAAAAAAAAAAAAAAAAAAA==",
+                "MbQAAAAAAAAAAAAAAAAAAA==",
+                "AAhAAAAAAAAAAAAAAAAAAA=="
+            ]
+        );
+        //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
+    }
 
-        assert!(false);
+    #[test]
+    fn test_field_pow_01() {
+        let json1 = json!([
+            "JAAAAAAAAAAAAAAAAAAAAA==",
+            "wAAAAAAAAAAAAAAAAAAAAA==",
+            "ACAAAAAAAAAAAAAAAAAAAA=="
+        ]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+
+        let result = element1.pow(3);
+
+        assert_eq!(
+            result.to_c_array(),
+            vec![
+                "AkkAAAAAAAAAAAAAAAAAAA==",
+                "DDAAAAAAAAAAAAAAAAAAAA==",
+                "LQIIAAAAAAAAAAAAAAAAAA==",
+                "8AAAAAAAAAAAAAAAAAAAAA==",
+                "ACgCQAAAAAAAAAAAAAAAAA==",
+                "AAAMAAAAAAAAAAAAAAAAAA==",
+                "AAAAAgAAAAAAAAAAAAAAAA=="
+            ]
+        );
         //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
     }
 }
