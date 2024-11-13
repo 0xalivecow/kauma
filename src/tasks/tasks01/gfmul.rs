@@ -16,7 +16,7 @@ pub fn gfmul_task(args: &Value) -> Result<Vec<u8>> {
 
     let semantic: String = serde_json::from_value(args["semantic"].clone())?;
 
-    let result = gfmul(poly_a, poly_b, &semantic)?;
+    let result = gfmul(&poly_a, &poly_b, &semantic)?;
 
     Ok(result)
 }
@@ -39,7 +39,7 @@ mod tests {
         let poly2_text: String = serde_json::from_value(args["b"].clone())?;
         let poly_b = BASE64_STANDARD.decode(poly2_text)?;
 
-        let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b, "xex")?);
+        let result = BASE64_STANDARD.encode(gfmul(&poly_a, &poly_b, "xex")?);
 
         assert_eq!(
             result, "hSQAAAAAAAAAAAAAAAAAAA==",
@@ -59,7 +59,7 @@ mod tests {
         let poly2_text: String = serde_json::from_value(args["b"].clone())?;
         let poly_b = BASE64_STANDARD.decode(poly2_text)?;
 
-        let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b, "xex")?);
+        let result = BASE64_STANDARD.encode(gfmul(&poly_a, &poly_b, "xex")?);
 
         assert_eq!(
             result, "QKgUAAAAAAAAAAAAAAAAAA==",
@@ -79,7 +79,7 @@ mod tests {
         let poly2_text: String = serde_json::from_value(args["b"].clone())?;
         let poly_b = BASE64_STANDARD.decode(poly2_text)?;
 
-        let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b, "xex")?);
+        let result = BASE64_STANDARD.encode(gfmul(&poly_a, &poly_b, "xex")?);
 
         assert_eq!(
             result, "UIAUAAAAAAAAAAAAAAAAAA==",
@@ -99,7 +99,7 @@ mod tests {
         let poly2_text: String = serde_json::from_value(args["b"].clone())?;
         let poly_b = BASE64_STANDARD.decode(poly2_text)?;
 
-        let result = BASE64_STANDARD.encode(gfmul(poly_a, poly_b, "xex")?);
+        let result = BASE64_STANDARD.encode(gfmul(&poly_a, &poly_b, "xex")?);
 
         assert_eq!(
             result, "hSQAAAAAAAAAAAAAAAAAAA==",

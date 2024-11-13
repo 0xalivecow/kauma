@@ -1,11 +1,14 @@
 use std::{
     env::args,
-    ops::{Add, BitXor, Mul},
+    ops::{Add, BitXor, Div, Mul, Rem, Sub},
+    result,
 };
 
 use anyhow::{anyhow, Ok, Result};
 use base64::prelude::*;
 use serde_json::Value;
+
+use crate::{tasks::tasks01::poly2block::poly2block, utils::poly::polynomial_2_block};
 
 use super::{math::xor_bytes, poly::gfmul};
 
@@ -142,35 +145,31 @@ impl Add for Polynomial {
     }
 }
 
+// Helper implementation for subtraction
+impl Sub for &FieldElement {
+    type Output = FieldElement;
+
+    fn sub(self, rhs: Self) -> FieldElement {
+        // In a field of characteristic 2, addition and subtraction are the same operation (XOR)
+        self + rhs
+    }
+}
+
+// Helper trait for checking emptiness
+trait IsEmpty {
+    fn is_empty(&self) -> bool;
+}
+
+impl IsEmpty for Polynomial {
+    fn is_empty(&self) -> bool {
+        self.polynomial.is_empty()
+    }
+}
 impl AsRef<[FieldElement]> for Polynomial {
     fn as_ref(&self) -> &[FieldElement] {
         &self.polynomial
     }
 }
-
-/*
-impl AsRef<[u8]> for Polynomial {
-    fn as_ref(&self) -> &[u8] {
-        &self.polynomial
-    }
-}
-*/
-/*
-impl Add for Polynomial {
-    type Output = Self;
-    fn add(self, rhs: Self) -> Self::Output {
-        FieldElement::new(
-            xor_bytes(&self.field_element, rhs.field_element).expect("Error in poly add"),
-        )
-    }
-}
-
-impl AsRef<[u8]> for Polynomial {
-    fn as_ref(&self) -> &[u8] {
-        &self.field_element.as_ref()
-    }
-}
-*/
 
 #[derive(Debug)]
 pub struct FieldElement {
@@ -187,11 +186,47 @@ impl FieldElement {
     }
 
     pub fn mul(&self, poly_a: Vec<u8>, poly_b: Vec<u8>) -> Result<Vec<u8>> {
-        gfmul(poly_a, poly_b, "gcm")
+        gfmul(&poly_a, &poly_b, "gcm")
     }
 
     pub fn to_b64(&self) -> String {
         BASE64_STANDARD.encode(&self.field_element)
+    }
+
+    pub fn pow(&self, mut exponent: u128) -> FieldElement {
+        if exponent == 0 {
+            // Return polynomial with coefficient 1
+            return FieldElement::new(vec![1]);
+        }
+
+        let base = self.clone();
+        let mut result = base.clone();
+        exponent -= 1; // Subtract 1 because we already set result to base
+
+        while exponent > 0 {
+            result = result * base.clone();
+            exponent -= 1;
+        }
+
+        result
+    }
+
+    pub fn inv(mut self) -> Self {
+        let mut inverser: u128 = 0xfffffffffffffffffffffffffffffffe;
+        let mut inverse: Vec<u8> = polynomial_2_block(vec![0], "gcm").unwrap();
+        eprintln!("Inverse start {:02X?}", inverse);
+
+        while inverser > 0 {
+            //eprintln!("{:02X}", inverser);
+            if inverser & 1 == 1 {
+                inverse = gfmul(&self.field_element, &inverse, "gcm").unwrap();
+            }
+            inverser >>= 1;
+            self.field_element = gfmul(&self.field_element, &self.field_element, "gcm")
+                .expect("Error in sqrmul sqr");
+        }
+        eprintln!("Inverse rhs {:?}", inverse);
+        FieldElement::new(inverse)
     }
 }
 
@@ -200,7 +235,7 @@ impl Mul for FieldElement {
 
     fn mul(self, rhs: Self) -> Self::Output {
         FieldElement::new(
-            gfmul(self.field_element, rhs.field_element, "gcm")
+            gfmul(&self.field_element, &rhs.field_element, "gcm")
                 .expect("Error during multiplication"),
         )
     }
@@ -211,7 +246,7 @@ impl Mul for &FieldElement {
 
     fn mul(self, rhs: &FieldElement) -> FieldElement {
         FieldElement::new(
-            gfmul(self.field_element.clone(), rhs.field_element.clone(), "gcm")
+            gfmul(&self.field_element, &rhs.field_element, "gcm")
                 .expect("Error during multiplication"),
         )
     }
@@ -261,6 +296,36 @@ impl BitXor for FieldElement {
         FieldElement::new(result)
     }
 }
+
+impl Div for FieldElement {
+    type Output = Self;
+    fn div(self, rhs: Self) -> Self::Output {
+        eprintln!("RHS in div{:02X?}", &rhs);
+
+        let inverse = rhs.inv();
+        eprintln!("Inverse in div{:02X?}", inverse);
+        self.clone() * inverse
+    }
+}
+
+impl Div for &FieldElement {
+    type Output = FieldElement;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        // First clone and invert the divisor (rhs)
+        let rhs_inv = rhs.clone().inv();
+        // Multiply original number by the inverse
+        self.clone() * rhs_inv
+    }
+}
+/*
+//TODO: Not yet ready
+   impl Rem for FieldElement {
+    fn rem(self, rhs: Self) -> Self::Output {
+
+    }
+}
+*/
 
 /*
 impl BitXor for FieldElement {
@@ -312,13 +377,13 @@ impl ByteArray {
                 let alpha_poly: Vec<u8> = base64::prelude::BASE64_STANDARD
                     .decode("AgAAAAAAAAAAAAAAAAAAAA==")
                     .expect("Decode failed");
-                self.0 = gfmul(self.0.clone(), alpha_poly, "xex").unwrap();
+                self.0 = gfmul(&self.0, &alpha_poly, "xex").unwrap();
             }
             "gcm" => {
                 let alpha_poly: Vec<u8> = base64::prelude::BASE64_STANDARD
                     .decode("AgAAAAAAAAAAAAAAAAAAAA==")
                     .expect("Decode failed");
-                self.0 = gfmul(self.0.clone(), alpha_poly, "gcm").unwrap();
+                self.0 = gfmul(&self.0, &alpha_poly, "gcm").unwrap();
             }
             _ => {}
         }
@@ -575,5 +640,18 @@ mod tests {
             ]
         );
         //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
+    }
+
+    #[test]
+    fn test_poly_div_01() {
+        let element1 =
+            FieldElement::new(BASE64_STANDARD.decode("JAAAAAAAAAAAAAAAAAAAAA==").unwrap());
+
+        let element2 =
+            FieldElement::new(BASE64_STANDARD.decode("wAAAAAAAAAAAAAAAAAAAAA==").unwrap());
+
+        let result = element1 / element2;
+
+        assert_eq!(BASE64_STANDARD.encode(result), "OAAAAAAAAAAAAAAAAAAAAA==");
     }
 }
