@@ -1,11 +1,8 @@
 use base64::prelude::*;
 
-use std::{collections::HashMap, env::args};
+use std::collections::HashMap;
 
-use crate::utils::{
-    ciphers::gcm_encrypt_aes,
-    parse::{Responses, Testcase, Testcases},
-};
+use crate::utils::parse::{Responses, Testcase, Testcases};
 use tasks01::{
     block2poly::block2poly,
     gcm::{gcm_decrypt, gcm_encrypt},
@@ -14,7 +11,7 @@ use tasks01::{
     pfmath::{gfdiv, gfpoly_add, gfpoly_divmod, gfpoly_mul, gfpoly_pow, gfpoly_powmod},
     poly2block::poly2block,
     sea128::sea128,
-    xex::{self, fde_xex},
+    xex::{fde_xex},
 };
 
 use anyhow::{anyhow, Result};

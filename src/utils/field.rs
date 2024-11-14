@@ -1,14 +1,10 @@
-use std::{
-    env::args,
-    ops::{Add, BitXor, Div, Mul, Rem, Sub},
-    result,
-};
+use std::ops::{Add, BitXor, Div, Mul, Sub};
 
 use anyhow::{anyhow, Ok, Result};
 use base64::prelude::*;
 use serde_json::Value;
 
-use crate::{tasks::tasks01::poly2block::poly2block, utils::poly::polynomial_2_block};
+use crate::utils::poly::polynomial_2_block;
 
 use super::{math::xor_bytes, poly::gfmul};
 

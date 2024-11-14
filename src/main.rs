@@ -1,5 +1,5 @@
 use std::{
-    env::{self, args},
+    env::{self},
     fs,
 };
 
