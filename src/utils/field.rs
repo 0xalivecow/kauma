@@ -77,19 +77,19 @@ impl Polynomial {
             polynomial_2_block(vec![0], "gcm").unwrap(),
         )]);
 
-        eprintln!("Initial result: {:?}", result);
+        //eprintln!("Initial result: {:?}", result);
         while exponent > 0 {
-            eprintln!("Current exponent: {:02X}", exponent);
+            //eprintln!("Current exponent: {:02X}", exponent);
             if exponent & 1 == 1 {
                 let temp = &self * &result;
-                eprintln!("After multiplication: {:?}", temp);
+                //eprintln!("After multiplication: {:?}", temp);
                 result = temp.div(&modulus).1;
-                eprintln!("After mod: {:?}", result);
+                //eprintln!("After mod: {:?}", result);
             }
             let temp_square = &self * &self;
-            eprintln!("After squaring: {:?}", temp_square);
+            //eprintln!("After squaring: {:?}", temp_square);
             self = temp_square.div(&modulus).1;
-            eprintln!("After mod: {:?}", self);
+            //eprintln!("After mod: {:?}", self);
             exponent >>= 1;
         }
         result
@@ -286,7 +286,7 @@ impl FieldElement {
     pub fn inv(mut self) -> Self {
         let mut inverser: u128 = 0xfffffffffffffffffffffffffffffffe;
         let mut inverse: Vec<u8> = polynomial_2_block(vec![0], "gcm").unwrap();
-        eprintln!("Inverse start {:02X?}", inverse);
+        //eprintln!("Inverse start {:02X?}", inverse);
 
         while inverser > 0 {
             //eprintln!("{:02X}", inverser);
@@ -297,7 +297,7 @@ impl FieldElement {
             self.field_element = gfmul(&self.field_element, &self.field_element, "gcm")
                 .expect("Error in sqrmul sqr");
         }
-        eprintln!("Inverse rhs {:?}", inverse);
+        //eprintln!("Inverse rhs {:?}", inverse);
         FieldElement::new(inverse)
     }
 }
