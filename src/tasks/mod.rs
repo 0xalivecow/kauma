@@ -11,6 +11,7 @@ use tasks01::{
     gcm::{gcm_decrypt, gcm_encrypt},
     gfmul::gfmul_task,
     pad_oracle::padding_oracle,
+    pfmath::gfpoly_add,
     poly2block::poly2block,
     sea128::sea128,
     xex::{self, fde_xex},
@@ -80,6 +81,12 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
             let plaintext = padding_oracle(args)?;
             let out_plain = BASE64_STANDARD.encode(&plaintext);
             let json = json!({"plaintext" : out_plain});
+
+            Ok(json)
+        }
+        "gfpoly_add" => {
+            let result = gfpoly_add(args)?;
+            let json = json!({"plaintext" : result.to_c_array()});
 
             Ok(json)
         }

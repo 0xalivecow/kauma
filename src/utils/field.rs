@@ -58,14 +58,12 @@ impl Polynomial {
 
     pub fn pow(&self, mut exponent: u128) -> Polynomial {
         if exponent == 0 {
-            // Return polynomial with coefficient 1
-            return Polynomial::new(vec![FieldElement::new(vec![1])]);
+            return Polynomial::new(vec![FieldElement::new(vec![0])]);
         }
 
         let base = self.clone();
         let mut result = base.clone();
-        exponent -= 1; // Subtract 1 because we already set result to base
-
+        exponent -= 1;
         while exponent > 0 {
             result = result * base.clone();
             exponent -= 1;
@@ -73,16 +71,90 @@ impl Polynomial {
 
         result
     }
-    /*
-    pub fn to_b64(&self) -> String {
-        let mut output: Vec<String> = vec![];
-        for coeff in self.polynomial {
-            output.push(BASE64_STANDARD.encode(coeff));
+
+    pub fn pow_mod(mut self, mut exponent: u128, modulus: Polynomial) -> Polynomial {
+        let mut result: Polynomial = Polynomial::new(vec![FieldElement::new(
+            polynomial_2_block(vec![0], "gcm").unwrap(),
+        )]);
+
+        eprintln!("Initial result: {:?}", result);
+        while exponent > 0 {
+            eprintln!("Current exponent: {:02X}", exponent);
+            if exponent & 1 == 1 {
+                let temp = &self * &result;
+                eprintln!("After multiplication: {:?}", temp);
+                result = temp.div(&modulus).1;
+                eprintln!("After mod: {:?}", result);
+            }
+            let temp_square = &self * &self;
+            eprintln!("After squaring: {:?}", temp_square);
+            self = temp_square.div(&modulus).1;
+            eprintln!("After mod: {:?}", self);
+            exponent >>= 1;
+        }
+        result
+    }
+
+    // Returns (quotient, remainder)
+    pub fn div(self, rhs: &Self) -> (Self, Self) {
+        // Div by zero check ommitted since data is guaranteed to be non 0
+
+        let mut remainder = self.clone();
+        let divisor = rhs;
+        let dividend_deg = remainder.polynomial.len() - 1;
+        let divisor_deg = divisor.polynomial.len() - 1;
+
+        if dividend_deg < divisor_deg {
+            return (
+                Polynomial::new(vec![FieldElement::new(
+                    polynomial_2_block(vec![0; 16], "gcm").unwrap(),
+                )]),
+                remainder,
+            );
         }
 
-        output
+        let mut quotient_coeffs =
+            vec![
+                FieldElement::new(polynomial_2_block(vec![0; 16], "gcm").unwrap());
+                dividend_deg - divisor_deg + 1
+            ];
+
+        while remainder.polynomial.len() >= divisor.polynomial.len() {
+            let deg_diff = remainder.polynomial.len() - divisor.polynomial.len();
+
+            let leading_dividend = remainder.polynomial.last().unwrap();
+            let leading_divisor = divisor.polynomial.last().unwrap();
+            let quot_coeff = leading_dividend / leading_divisor;
+
+            quotient_coeffs[deg_diff] = quot_coeff.clone();
+
+            let mut subtrahend =
+                vec![FieldElement::new(polynomial_2_block(vec![0; 16], "gcm").unwrap()); deg_diff];
+            subtrahend.extend(
+                divisor
+                    .polynomial
+                    .iter()
+                    .map(|x| x.clone() * quot_coeff.clone()),
+            );
+            let subtrahend_poly = Polynomial::new(subtrahend);
+
+            remainder = remainder + subtrahend_poly;
+
+            while !remainder.polynomial.is_empty()
+                && remainder
+                    .polynomial
+                    .last()
+                    .unwrap()
+                    .as_ref()
+                    .iter()
+                    .all(|&x| x == 0)
+            {
+                remainder.polynomial.pop();
+            }
+        }
+
+        (Polynomial::new(quotient_coeffs), remainder)
     }
-    */
 }
 
 impl Clone for Polynomial {
@@ -318,15 +390,20 @@ impl Div for &FieldElement {
         self.clone() * rhs_inv
     }
 }
-/*
-//TODO: Not yet ready
-   impl Rem for FieldElement {
-    fn rem(self, rhs: Self) -> Self::Output {
 
+/*
+impl Rem for FieldElement {
+    type Output = Self;
+    fn rem(self, rhs: Self) -> Self::Output {
+        let result: FieldElement = self.field_element;
+
+        while self.field_element[15] != 0x00 {
+            self.field_element
+        }
+        todo!();
     }
 }
 */
-
 /*
 impl BitXor for FieldElement {
     fn bitxor(self, rhs: Self) -> Self::Output {
@@ -643,6 +720,32 @@ mod tests {
     }
 
     #[test]
+    fn test_field_pow_mod_01() {
+        let json1 = json!([
+            "JAAAAAAAAAAAAAAAAAAAAA==",
+            "wAAAAAAAAAAAAAAAAAAAAA==",
+            "ACAAAAAAAAAAAAAAAAAAAA=="
+        ]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+
+        let result = element1.pow(3);
+
+        assert_eq!(
+            result.to_c_array(),
+            vec![
+                "AkkAAAAAAAAAAAAAAAAAAA==",
+                "DDAAAAAAAAAAAAAAAAAAAA==",
+                "LQIIAAAAAAAAAAAAAAAAAA==",
+                "8AAAAAAAAAAAAAAAAAAAAA==",
+                "ACgCQAAAAAAAAAAAAAAAAA==",
+                "AAAMAAAAAAAAAAAAAAAAAA==",
+                "AAAAAgAAAAAAAAAAAAAAAA=="
+            ]
+        );
+        //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
+    }
+
+    #[test]
     fn test_poly_div_01() {
         let element1 =
             FieldElement::new(BASE64_STANDARD.decode("JAAAAAAAAAAAAAAAAAAAAA==").unwrap());
@@ -653,5 +756,46 @@ mod tests {
         let result = element1 / element2;
 
         assert_eq!(BASE64_STANDARD.encode(result), "OAAAAAAAAAAAAAAAAAAAAA==");
+    }
+
+    #[test]
+    fn test_field_poly_div_01() {
+        let json1 = json!([
+            "JAAAAAAAAAAAAAAAAAAAAA==",
+            "wAAAAAAAAAAAAAAAAAAAAA==",
+            "ACAAAAAAAAAAAAAAAAAAAA=="
+        ]);
+        let json2 = json!(["0AAAAAAAAAAAAAAAAAAAAA==", "IQAAAAAAAAAAAAAAAAAAAA=="]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let element2: Polynomial = Polynomial::from_c_array(&json2);
+
+        //eprintln!("{:?}", element1);
+
+        println!("Beginning the new division");
+        let (result, remainder) = element1.div(&element2);
+
+        assert_eq!(
+            result.to_c_array(),
+            vec!["nAIAgCAIAgCAIAgCAIAgCg==", "m85znOc5znOc5znOc5znOQ=="]
+        );
+        assert_eq!(remainder.to_c_array(), vec!["lQNA0DQNA0DQNA0DQNA0Dg=="]);
+        //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
+    }
+
+    #[test]
+    fn test_field_poly_powmod_01() {
+        let json1 = json!([
+            "JAAAAAAAAAAAAAAAAAAAAA==",
+            "wAAAAAAAAAAAAAAAAAAAAA==",
+            "ACAAAAAAAAAAAAAAAAAAAA=="
+        ]);
+        let json2 = json!(["KryptoanalyseAAAAAAAAA==", "DHBWMannheimAAAAAAAAAA=="]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let modulus: Polynomial = Polynomial::from_c_array(&json2);
+
+        let result = element1.pow_mod(1000, modulus);
+
+        eprintln!("Result is: {:02X?}", result);
+        assert_eq!(result.to_c_array(), vec!["XrEhmKuat+Glt5zZWtMo6g=="]);
     }
 }
