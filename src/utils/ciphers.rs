@@ -340,25 +340,25 @@ pub fn ghash(
     eprintln!("Ad chunks before first next {:001X?}", ad_chunks);
 
     let inter1 = xor_bytes(&output, ad_chunks.next().unwrap().to_vec())?;
-    let mut inter_loop = gfmul(inter1, auth_key_h.clone(), "gcm")?;
+    let mut inter_loop = gfmul(&inter1, &auth_key_h, "gcm")?;
     eprintln!("Ad chunks after first next {:001X?}", ad_chunks);
 
     for chunk in ad_chunks {
         eprintln!("Inside ad chunk loop");
         eprintln!("Ad chunk in loop {:001X?}", chunk);
         let inter2 = xor_bytes(&inter_loop, chunk.to_vec())?;
-        inter_loop = gfmul(inter2, auth_key_h.clone(), "gcm")?;
+        inter_loop = gfmul(&inter2, &auth_key_h, "gcm")?;
     }
 
     let cipher_chunks = ciphertext.chunks(16);
 
     for chunk in cipher_chunks {
         let inter3 = xor_bytes(&inter_loop, chunk.to_vec())?;
-        inter_loop = gfmul(inter3, auth_key_h.clone(), "gcm")?;
+        inter_loop = gfmul(&inter3, &auth_key_h, "gcm")?;
     }
 
     let inter4 = xor_bytes(&inter_loop, l_field)?;
-    inter_loop = gfmul(inter4, auth_key_h.clone(), "gcm")?;
+    inter_loop = gfmul(&inter4, &auth_key_h, "gcm")?;
 
     eprintln!("GHASH auth tag: {:001X?}", inter_loop);
 

@@ -11,6 +11,7 @@ use tasks01::{
     gcm::{gcm_decrypt, gcm_encrypt},
     gfmul::gfmul_task,
     pad_oracle::padding_oracle,
+    pfmath::{gfdiv, gfpoly_add, gfpoly_divmod, gfpoly_mul, gfpoly_pow, gfpoly_powmod},
     poly2block::poly2block,
     sea128::sea128,
     xex::{self, fde_xex},
@@ -83,6 +84,44 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
 
             Ok(json)
         }
+        "gfpoly_add" => {
+            let result = gfpoly_add(args)?;
+            let json = json!({"S" : result.to_c_array()});
+
+            Ok(json)
+        }
+        "gfpoly_mul" => {
+            let result = gfpoly_mul(args)?;
+            let json = json!({"P" : result.to_c_array()});
+
+            Ok(json)
+        }
+        "gfpoly_pow" => {
+            let result = gfpoly_pow(args)?;
+            let json = json!({"Z" : result.to_c_array()});
+
+            Ok(json)
+        }
+        "gfdiv" => {
+            let result = gfdiv(args)?;
+            let out = BASE64_STANDARD.encode(result);
+            let json = json!({"q" : out});
+
+            Ok(json)
+        }
+        "gfpoly_divmod" => {
+            let result = gfpoly_divmod(args)?;
+            let json = json!({"Q" : result.0.to_c_array(), "R" : result.1.to_c_array()});
+
+            Ok(json)
+        }
+        "gfpoly_powmod" => {
+            let result = gfpoly_powmod(args)?;
+            let json = json!({"Z" : result.to_c_array()});
+
+            Ok(json)
+        }
+
         _ => Err(anyhow!(
             "Fatal. No compatible action found. Json data was {:?}. Arguments were; {:?}",
             testcase,
@@ -257,6 +296,24 @@ mod tests {
 
     #[test]
     fn test_task_gcm_decrypt_sea_case() -> Result<()> {
+        let json = fs::read_to_string("test_json/gcm_decrypt_sea.json").unwrap();
+        let parsed = parse_json(json).unwrap();
+
+        let expected = json!({ "responses" : { "b856d760-023d-4b00-bad2-15d2b6da22fe" : {
+        "plaintext": "RGFzIGlzdCBlaW4gVGVzdA==",
+        "authentic": true,
+        }}});
+
+        assert_eq!(
+            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(expected).unwrap()
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_task_gcm_gfpoly_add() -> Result<()> {
         let json = fs::read_to_string("test_json/gcm_decrypt_sea.json").unwrap();
         let parsed = parse_json(json).unwrap();
 

@@ -7,14 +7,14 @@ use std::{str::FromStr, u128, u8, usize};
 use super::{field, math::reverse_bits_in_bytevec};
 pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
-pub fn gfmul(poly_a: Vec<u8>, poly_b: Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
+pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
     let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
     red_poly_bytes.0.push(0x01);
 
-    let mut poly1: ByteArray = ByteArray(poly_a);
+    let mut poly1: ByteArray = ByteArray(poly_a.to_owned());
     poly1.0.push(0x00);
 
-    let mut poly2: ByteArray = ByteArray(poly_b);
+    let mut poly2: ByteArray = ByteArray(poly_b.to_owned());
     poly2.0.push(0x00);
 
     if semantic == "gcm" {

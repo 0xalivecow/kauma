@@ -1,0 +1,98 @@
+{
+  "testcases": {
+    "gfpoly_add": {
+      "action": "gfpoly_add",
+      "arguments": {
+        "A": [
+          "NeverGonnaGiveYouUpAAA==",
+          "NeverGonnaLetYouDownAA==",
+          "NeverGonnaRunAroundAAA==",
+          "AndDesertYouAAAAAAAAAA=="
+        ],
+        "B": [
+          "KryptoanalyseAAAAAAAAA==",
+          "DHBWMannheimAAAAAAAAAA=="
+        ]
+      }
+    },
+    "gfpoly_mul": {
+      "action": "gfpoly_mul",
+      "arguments": {
+        "A": [
+          "JAAAAAAAAAAAAAAAAAAAAA==",
+          "wAAAAAAAAAAAAAAAAAAAAA==",
+          "ACAAAAAAAAAAAAAAAAAAAA=="
+        ],
+        "B": [
+          "0AAAAAAAAAAAAAAAAAAAAA==",
+          "IQAAAAAAAAAAAAAAAAAAAA=="
+        ]
+      }
+    },
+    "gfpoly_mul_10": {
+      "action": "gfpoly_mul",
+      "arguments": {
+        "A": [
+          "JAAAAAAAAAAAAAAAAAAAAA==",
+          "wAAAAAAAAAAAAAAAAAAAAA==",
+          "ACAAAAAAAAAAAAAAAAAAAA=="
+        ],
+        "B": [
+          "AAAAAAAAAAAAAAAAAAAAAA=="
+        ]
+      }
+    },
+    "gfpoly_mul_01": {
+      "action": "gfpoly_mul",
+      "arguments": {
+        "A": [
+          "AAAAAAAAAAAAAAAAAAAAAA=="
+        ],
+        "B": [
+          "0AAAAAAAAAAAAAAAAAAAAA==",
+          "IQAAAAAAAAAAAAAAAAAAAA=="
+        ]
+      }
+    },
+    "gfpoly_pow": {
+      "action": "gfpoly_pow",
+      "arguments": {
+        "A": [
+          "JAAAAAAAAAAAAAAAAAAAAA==",
+          "wAAAAAAAAAAAAAAAAAAAAA==",
+          "ACAAAAAAAAAAAAAAAAAAAA=="
+        ],
+        "k": 3
+      }
+    },
+    "gfpoly_pow_k0": {
+      "action": "gfpoly_pow",
+      "arguments": {
+        "A": [
+          "JAAAAAAAAAAAAAAAAAAAAA==",
+          "wAAAAAAAAAAAAAAAAAAAAA==",
+          "ACAAAAAAAAAAAAAAAAAAAA=="
+        ],
+        "k": 0
+      }
+    },
+    "gfpoly_pow_k1": {
+      "action": "gfpoly_pow",
+      "arguments": {
+        "A": [
+          "JAAAAAAAAAAAAAAAAAAAAA==",
+          "wAAAAAAAAAAAAAAAAAAAAA==",
+          "ACAAAAAAAAAAAAAAAAAAAA=="
+        ],
+        "k": 1
+      }
+    },
+    "gfdiv": {
+      "action": "gfdiv",
+      "arguments": {
+        "a": "JAAAAAAAAAAAAAAAAAAAAA==",
+        "b": "wAAAAAAAAAAAAAAAAAAAAA=="
+      }
+    }
+  }
+}
