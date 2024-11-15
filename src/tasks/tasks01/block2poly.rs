@@ -1,4 +1,4 @@
-use crate::utils::poly::{b64_2_num, block_2_polynomial, get_coefficients};
+use crate::utils::poly::block_2_polynomial;
 use anyhow::Result;
 use base64::prelude::*;
 use serde_json::Value;

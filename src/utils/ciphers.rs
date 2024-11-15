@@ -1,6 +1,4 @@
-use std::{io::BufRead, process::Output};
-
-use crate::utils::{field::ByteArray, math::reverse_bits_in_bytevec, poly::gfmul};
+use crate::utils::{field::ByteArray, poly::gfmul};
 use anyhow::Result;
 use base64::prelude::*;
 use openssl::symm::{Cipher, Crypter, Mode};
@@ -40,7 +38,6 @@ pub fn aes_128_decrypt(key: &Vec<u8>, input: &Vec<u8>) -> Result<Vec<u8>> {
 
     let mut bytes: [u8; 16] = [0u8; 16];
     bytes.copy_from_slice(&plaintext);
-    let number: u128 = <u128>::from_be_bytes(bytes);
 
     Ok(plaintext)
 }

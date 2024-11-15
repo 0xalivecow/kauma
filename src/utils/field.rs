@@ -1,14 +1,10 @@
-use std::{
-    env::args,
-    ops::{Add, BitXor, Div, Mul, Rem, Sub},
-    result,
-};
+use std::ops::{Add, BitXor, Div, Mul, Sub};
 
 use anyhow::{anyhow, Ok, Result};
 use base64::prelude::*;
 use serde_json::Value;
 
-use crate::{tasks::tasks01::poly2block::poly2block, utils::poly::polynomial_2_block};
+use crate::utils::poly::polynomial_2_block;
 
 use super::{math::xor_bytes, poly::gfmul};
 
@@ -58,7 +54,9 @@ impl Polynomial {
 
     pub fn pow(&self, mut exponent: u128) -> Polynomial {
         if exponent == 0 {
-            return Polynomial::new(vec![FieldElement::new(vec![0])]);
+            return Polynomial::new(vec![FieldElement::new(
+                polynomial_2_block(vec![0], "gcm").unwrap(),
+            )]);
         }
 
         let base = self.clone();
@@ -73,6 +71,12 @@ impl Polynomial {
     }
 
     pub fn pow_mod(mut self, mut exponent: u128, modulus: Polynomial) -> Polynomial {
+        if exponent == 0 {
+            return Polynomial::new(vec![FieldElement::new(
+                polynomial_2_block(vec![0], "gcm").unwrap(),
+            )]);
+        }
+
         let mut result: Polynomial = Polynomial::new(vec![FieldElement::new(
             polynomial_2_block(vec![0], "gcm").unwrap(),
         )]);
@@ -98,6 +102,12 @@ impl Polynomial {
     // Returns (quotient, remainder)
     pub fn div(self, rhs: &Self) -> (Self, Self) {
         // Div by zero check ommitted since data is guaranteed to be non 0
+
+        eprintln!("{:?}, {:?}", self.polynomial.len(), rhs.polynomial.len());
+
+        if self.polynomial.len() < rhs.polynomial.len() {
+            return (Polynomial::new(vec![FieldElement::new(vec![0; 16])]), self);
+        }
 
         let mut remainder = self.clone();
         let divisor = rhs;
@@ -155,6 +165,15 @@ impl Polynomial {
 
         (Polynomial::new(quotient_coeffs), remainder)
     }
+
+    fn is_zero(&self) -> bool {
+        for field_element in &self.polynomial {
+            if !field_element.is_zero() {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 impl Clone for Polynomial {
@@ -167,8 +186,10 @@ impl Clone for Polynomial {
 
 impl Mul for Polynomial {
     type Output = Self;
-
     fn mul(self, rhs: Self) -> Self::Output {
+        if self.is_zero() || rhs.is_zero() {
+            return Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+        }
         let mut polynomial: Vec<FieldElement> =
             vec![FieldElement::new(vec![0; 16]); self.polynomial.len() + rhs.polynomial.len() - 1];
         for i in 0..self.polynomial.len() {
@@ -184,6 +205,9 @@ impl Mul for Polynomial {
 impl Mul for &Polynomial {
     type Output = Polynomial;
     fn mul(self, rhs: Self) -> Self::Output {
+        if self.is_zero() || rhs.is_zero() {
+            return Polynomial::new(vec![FieldElement::new(vec![0])]);
+        }
         let mut polynomial: Vec<FieldElement> =
             vec![FieldElement::new(vec![0; 16]); self.polynomial.len() + rhs.polynomial.len() - 1];
         for i in 0..self.polynomial.len() {
@@ -299,6 +323,10 @@ impl FieldElement {
         }
         //eprintln!("Inverse rhs {:?}", inverse);
         FieldElement::new(inverse)
+    }
+
+    fn is_zero(&self) -> bool {
+        self.field_element.iter().all(|&x| x == 0x00)
     }
 }
 
@@ -522,15 +550,13 @@ impl ByteArray {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use base64::prelude::*;
     use serde_json::json;
-    use std::fs;
 
     #[test]
     fn test_byte_array_shift1() {
         let mut byte_array: ByteArray = ByteArray(vec![0x00, 0x01]);
         let shifted_array: ByteArray = ByteArray(vec![0x00, 0x02]);
-        byte_array.left_shift("xex");
+        byte_array.left_shift("xex").unwrap();
 
         assert_eq!(byte_array.0, shifted_array.0);
     }
@@ -539,7 +565,7 @@ mod tests {
     fn test_byte_array_shift2() {
         let mut byte_array: ByteArray = ByteArray(vec![0xFF, 0x00]);
         let shifted_array: ByteArray = ByteArray(vec![0xFE, 0x01]);
-        byte_array.left_shift("xex");
+        byte_array.left_shift("xex").unwrap();
 
         assert_eq!(
             byte_array.0, shifted_array.0,
@@ -552,7 +578,7 @@ mod tests {
     fn test_byte_array_shift1_gcm() {
         let mut byte_array: ByteArray = ByteArray(vec![0xFF, 0x00]);
         let shifted_array: ByteArray = ByteArray(vec![0x7F, 0x80]);
-        byte_array.left_shift("gcm");
+        byte_array.left_shift("gcm").unwrap();
 
         assert_eq!(
             byte_array.0, shifted_array.0,
@@ -565,7 +591,7 @@ mod tests {
     fn test_byte_array_shift1_right_gcm() {
         let mut byte_array: ByteArray = ByteArray(vec![0xFF, 0x00]);
         let shifted_array: ByteArray = ByteArray(vec![0xFE, 0x00]);
-        byte_array.right_shift("gcm");
+        byte_array.right_shift("gcm").unwrap();
 
         assert_eq!(
             byte_array.0, shifted_array.0,
@@ -578,7 +604,7 @@ mod tests {
     fn test_byte_array_shift_right() {
         let mut byte_array: ByteArray = ByteArray(vec![0x02]);
         let shifted_array: ByteArray = ByteArray(vec![0x01]);
-        byte_array.right_shift("xex");
+        byte_array.right_shift("xex").unwrap();
 
         assert_eq!(
             byte_array.0, shifted_array.0,
@@ -667,6 +693,68 @@ mod tests {
     }
 
     #[test]
+    fn test_field_add_zero() {
+        let json1 = json!([
+            "NeverGonnaGiveYouUpAAA==",
+            "NeverGonnaLetYouDownAA==",
+            "NeverGonnaRunAroundAAA==",
+            "AndDesertYouAAAAAAAAAA=="
+        ]);
+        let json2 = json!(["AAAAAAAAAAAAAAAAAAAAAA=="]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let element2: Polynomial = Polynomial::from_c_array(&json2);
+
+        let sum = element2 + element1;
+
+        assert_eq!(
+            sum.to_c_array(),
+            vec![
+                "NeverGonnaGiveYouUpAAA==",
+                "NeverGonnaLetYouDownAA==",
+                "NeverGonnaRunAroundAAA==",
+                "AndDesertYouAAAAAAAAAA=="
+            ]
+        );
+    }
+
+    #[test]
+    fn test_field_add_zero_to_zero() {
+        let json1 = json!(["AAAAAAAAAAAAAAAAAAAAAA=="]);
+        let json2 = json!(["AAAAAAAAAAAAAAAAAAAAAA=="]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let element2: Polynomial = Polynomial::from_c_array(&json2);
+
+        let sum = element2 + element1;
+
+        assert_eq!(sum.to_c_array(), vec!["AAAAAAAAAAAAAAAAAAAAAA=="]);
+    }
+
+    #[test]
+    fn test_field_add_short_to_long() {
+        let json1 = json!(["AAAAAAAAAAAAAAAAAAAAAA=="]);
+        let json2 = json!([
+            "NeverGonnaGiveYouUpAAA==",
+            "NeverGonnaLetYouDownAA==",
+            "NeverGonnaRunAroundAAA==",
+            "AndDesertYouAAAAAAAAAA=="
+        ]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let element2: Polynomial = Polynomial::from_c_array(&json2);
+
+        let sum = element2 + element1;
+
+        assert_eq!(
+            sum.to_c_array(),
+            vec![
+                "NeverGonnaGiveYouUpAAA==",
+                "NeverGonnaLetYouDownAA==",
+                "NeverGonnaRunAroundAAA==",
+                "AndDesertYouAAAAAAAAAA=="
+            ]
+        );
+    }
+
+    #[test]
     fn test_field_mul_01() {
         let json1 = json!([
             "JAAAAAAAAAAAAAAAAAAAAA==",
@@ -694,7 +782,26 @@ mod tests {
     }
 
     #[test]
-    fn test_field_pow_01() {
+    fn test_poly_mul_with_zero() {
+        let json1 = json!([
+            "JAAAAAAAAAAAAAAAAAAAAA==",
+            "wAAAAAAAAAAAAAAAAAAAAA==",
+            "ACAAAAAAAAAAAAAAAAAAAA=="
+        ]);
+        let json2 = json!(["AAAAAAAAAAAAAAAAAAAAAA=="]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let element2: Polynomial = Polynomial::from_c_array(&json2);
+
+        //eprintln!("{:?}", element1);
+
+        let result = element1 * element2;
+
+        assert_eq!(result.to_c_array(), vec!["AAAAAAAAAAAAAAAAAAAAAA=="]);
+        //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
+    }
+
+    #[test]
+    fn test_poly_pow_01() {
         let json1 = json!([
             "JAAAAAAAAAAAAAAAAAAAAA==",
             "wAAAAAAAAAAAAAAAAAAAAA==",
@@ -716,6 +823,21 @@ mod tests {
                 "AAAAAgAAAAAAAAAAAAAAAA=="
             ]
         );
+        //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
+    }
+
+    #[test]
+    fn test_poly_pow_with_zero() {
+        let json1 = json!([
+            "JAAAAAAAAAAAAAAAAAAAAA==",
+            "wAAAAAAAAAAAAAAAAAAAAA==",
+            "ACAAAAAAAAAAAAAAAAAAAA=="
+        ]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+
+        let result = element1.pow(0);
+
+        assert_eq!(result.to_c_array(), vec!["gAAAAAAAAAAAAAAAAAAAAA=="]);
         //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
     }
 
@@ -742,6 +864,38 @@ mod tests {
                 "AAAAAgAAAAAAAAAAAAAAAA=="
             ]
         );
+        //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
+    }
+
+    #[test]
+    fn test_field_pow_mod_with_zero() {
+        let json1 = json!([
+            "JAAAAAAAAAAAAAAAAAAAAA==",
+            "wAAAAAAAAAAAAAAAAAAAAA==",
+            "ACAAAAAAAAAAAAAAAAAAAA=="
+        ]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+
+        let result = element1.pow(0);
+
+        assert_eq!(result.to_c_array(), vec!["gAAAAAAAAAAAAAAAAAAAAA=="]);
+        //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
+    }
+
+    #[test]
+    fn test_field_pow_mod_10mill() {
+        let json1 = json!([
+            "JAAAAAAAAAAAAAAAAAAAAA==",
+            "wAAAAAAAAAAAAAAAAAAAAA==",
+            "ACAAAAAAAAAAAAAAAAAAAA=="
+        ]);
+        let json2 = json!(["KryptoanalyseAAAAAAAAA==", "DHBWMannheimAAAAAAAAAA=="]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let modulus: Polynomial = Polynomial::from_c_array(&json2);
+
+        let result = element1.pow_mod(10000000, modulus);
+
+        assert!(!result.is_zero())
         //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
     }
 
@@ -783,6 +937,29 @@ mod tests {
     }
 
     #[test]
+    fn test_field_poly_div_larger_div() {
+        let json1 = json!([
+            "JAAAAAAAAAAAAAAAAAAAAA==",
+            "wAAAAAAAAAAAAAAAAAAAAA==",
+            "ACAAAAAAAAAAAAAAAAAAAA=="
+        ]);
+        let json2 = json!(["0AAAAAAAAAAAAAAAAAAAAA==", "IQAAAAAAAAAAAAAAAAAAAA=="]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let element2: Polynomial = Polynomial::from_c_array(&json2);
+
+        //eprintln!("{:?}", element1);
+
+        println!("Beginning the new division");
+        let (result, remainder) = element2.div(&element1);
+
+        assert_eq!(result.to_c_array(), vec!["AAAAAAAAAAAAAAAAAAAAAA=="]);
+        assert_eq!(
+            remainder.to_c_array(),
+            vec!["0AAAAAAAAAAAAAAAAAAAAA==", "IQAAAAAAAAAAAAAAAAAAAA=="]
+        );
+        //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
+    }
+    #[test]
     fn test_field_poly_powmod_01() {
         let json1 = json!([
             "JAAAAAAAAAAAAAAAAAAAAA==",
@@ -796,6 +973,6 @@ mod tests {
         let result = element1.pow_mod(1000, modulus);
 
         eprintln!("Result is: {:02X?}", result);
-        assert_eq!(result.to_c_array(), vec!["XrEhmKuat+Glt5zZWtMo6g=="]);
+        assert_eq!(result.to_c_array(), vec!["oNXl5P8xq2WpUTP92u25zg=="]);
     }
 }

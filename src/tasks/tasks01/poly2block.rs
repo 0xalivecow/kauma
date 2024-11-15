@@ -1,6 +1,5 @@
-use crate::utils::poly::{self, polynomial_2_block};
+use crate::utils::poly::{polynomial_2_block};
 use anyhow::{Ok, Result};
-use base64::prelude::*;
 use serde_json::Value;
 
 pub fn poly2block(args: &Value) -> Result<Vec<u8>> {

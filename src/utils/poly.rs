@@ -1,10 +1,8 @@
 use crate::utils::field::ByteArray;
 use anyhow::{anyhow, Result};
 use base64::prelude::*;
-use serde_json::Value;
 use std::{str::FromStr, u128, u8, usize};
 
-use super::{field, math::reverse_bits_in_bytevec};
 pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
 pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
@@ -172,7 +170,7 @@ pub fn coefficients_to_byte_arr_xex(coeffs: Vec<u8>) -> Vec<u8> {
     let mut byte_array: Vec<u8> = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     for coeff in coeffs {
         let block_num = coeff / 8;
-        byte_array[usize::from(block_num)] |= (1 << (coeff % 7));
+        byte_array[usize::from(block_num)] |= 1 << (coeff % 7);
     }
 
     byte_array

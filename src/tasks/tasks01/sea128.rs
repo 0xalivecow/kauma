@@ -12,7 +12,6 @@ pub fn sea128(args: &Value) -> Result<String> {
     let input_string: String = serde_json::from_value(args["input"].clone())?;
     //let plaintexts: &[u8] = &b64_2_num(plaintexts_string)?.to_ne_bytes();
     let input = BASE64_STANDARD.decode(input_string)?;
-    let xor_val: u128 = 0xc0ffeec0ffeec0ffeec0ffeec0ffee11;
 
     let mode: String = serde_json::from_value(args["mode"].clone())?;
     match mode.as_str() {
@@ -34,7 +33,6 @@ pub fn sea128(args: &Value) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
 
     use anyhow::Result;
     use serde_json::json;

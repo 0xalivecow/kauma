@@ -3,8 +3,8 @@ use base64::prelude::*;
 use serde_json::Value;
 use std::io::prelude::*;
 use std::net::TcpStream;
-use std::time::{Duration, Instant};
-use std::{thread, usize};
+use std::time::Instant;
+use std::usize;
 
 pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
     let hostname: String = serde_json::from_value(args["hostname"].clone())?;
@@ -29,8 +29,6 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
     let mut chunk_counter = 0;
 
     for chunk in &cipher_chunks {
-        let start = Instant::now();
-
         let mut stream = TcpStream::connect(format!("{}:{}", hostname, port))?;
         stream.set_nonblocking(false)?;
 
@@ -111,12 +109,12 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
                 } else {
                     //eprintln!("Invalid padding");
                     // Search for second hit
-                    let valid_val = (255
+                    let valid_val = 255
                         - server_q_resp
                             .iter()
                             .rev()
                             .position(|&r| r == 0x01)
-                            .unwrap_or(0x00) as u8);
+                            .unwrap_or(0x00) as u8;
                     if valid_val == 0x00 {
                         eprintln!("No valid found");
                     }
