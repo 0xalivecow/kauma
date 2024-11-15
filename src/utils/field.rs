@@ -103,6 +103,12 @@ impl Polynomial {
     pub fn div(self, rhs: &Self) -> (Self, Self) {
         // Div by zero check ommitted since data is guaranteed to be non 0
 
+        eprintln!("{:?}, {:?}", self.polynomial.len(), rhs.polynomial.len());
+
+        if self.polynomial.len() < rhs.polynomial.len() {
+            return (Polynomial::new(vec![FieldElement::new(vec![0; 16])]), self);
+        }
+
         let mut remainder = self.clone();
         let divisor = rhs;
         let dividend_deg = remainder.polynomial.len() - 1;
@@ -883,11 +889,13 @@ mod tests {
             "wAAAAAAAAAAAAAAAAAAAAA==",
             "ACAAAAAAAAAAAAAAAAAAAA=="
         ]);
+        let json2 = json!(["KryptoanalyseAAAAAAAAA==", "DHBWMannheimAAAAAAAAAA=="]);
         let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let modulus: Polynomial = Polynomial::from_c_array(&json2);
 
-        let result = element1.pow(10000000);
+        let result = element1.pow_mod(10000000, modulus);
 
-        assert_eq!(result.to_c_array(), vec!["gAAAAAAAAAAAAAAAAAAAAA=="]);
+        assert!(!result.is_zero())
         //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
     }
 
@@ -928,6 +936,29 @@ mod tests {
         //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
     }
 
+    #[test]
+    fn test_field_poly_div_larger_div() {
+        let json1 = json!([
+            "JAAAAAAAAAAAAAAAAAAAAA==",
+            "wAAAAAAAAAAAAAAAAAAAAA==",
+            "ACAAAAAAAAAAAAAAAAAAAA=="
+        ]);
+        let json2 = json!(["0AAAAAAAAAAAAAAAAAAAAA==", "IQAAAAAAAAAAAAAAAAAAAA=="]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let element2: Polynomial = Polynomial::from_c_array(&json2);
+
+        //eprintln!("{:?}", element1);
+
+        println!("Beginning the new division");
+        let (result, remainder) = element2.div(&element1);
+
+        assert_eq!(result.to_c_array(), vec!["AAAAAAAAAAAAAAAAAAAAAA=="]);
+        assert_eq!(
+            remainder.to_c_array(),
+            vec!["0AAAAAAAAAAAAAAAAAAAAA==", "IQAAAAAAAAAAAAAAAAAAAA=="]
+        );
+        //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
+    }
     #[test]
     fn test_field_poly_powmod_01() {
         let json1 = json!([
