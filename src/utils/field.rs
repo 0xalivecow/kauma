@@ -75,6 +75,18 @@ impl Polynomial {
             polynomial_2_block(vec![0], "gcm").unwrap(),
         )]);
 
+        if exponent == 1 {
+            return self;
+        }
+
+        if exponent == 0 {
+            Polynomial::new(vec![FieldElement::new(
+                polynomial_2_block(vec![1], "gcm").unwrap(),
+            )])
+            .div(&modulus)
+            .1;
+        }
+
         //eprintln!("Initial result: {:?}", result);
         while exponent > 0 {
             //eprintln!("Current exponent: {:02X}", exponent);
@@ -1007,5 +1019,31 @@ mod tests {
 
         eprintln!("Result is: {:02X?}", result);
         assert_eq!(result.to_c_array(), vec!["oNXl5P8xq2WpUTP92u25zg=="]);
+    }
+
+    #[test]
+    fn test_field_poly_powmod_k1() {
+        let json1 = json!(["JAAAAAAAAAAAAAAAAAAAAA==",]);
+        let json2 = json!(["KryptoanalyseAAAAAAAAA=="]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let modulus: Polynomial = Polynomial::from_c_array(&json2);
+
+        let result = element1.pow_mod(1, modulus);
+
+        eprintln!("Result is: {:02X?}", result);
+        assert_eq!(result.to_c_array(), vec!["JAAAAAAAAAAAAAAAAAAAAA=="]);
+    }
+
+    #[test]
+    fn test_field_poly_powmod_k0() {
+        let json1 = json!(["JAAAAAAAAAAAAAAAAAAAAA==",]);
+        let json2 = json!(["KryptoanalyseAAAAAAAAA=="]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let modulus: Polynomial = Polynomial::from_c_array(&json2);
+
+        let result = element1.pow_mod(0, modulus);
+
+        eprintln!("Result is: {:02X?}", result);
+        assert_eq!(result.to_c_array(), vec!["gAAAAAAAAAAAAAAAAAAAAA=="]);
     }
 }
