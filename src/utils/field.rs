@@ -71,12 +71,6 @@ impl Polynomial {
     }
 
     pub fn pow_mod(mut self, mut exponent: u128, modulus: Polynomial) -> Polynomial {
-        if exponent == 0 {
-            return Polynomial::new(vec![FieldElement::new(
-                polynomial_2_block(vec![0], "gcm").unwrap(),
-            )]);
-        }
-
         let mut result: Polynomial = Polynomial::new(vec![FieldElement::new(
             polynomial_2_block(vec![0], "gcm").unwrap(),
         )]);
@@ -163,6 +157,9 @@ impl Polynomial {
             }
         }
 
+        if remainder.is_empty() {
+            remainder = Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+        }
         (Polynomial::new(quotient_coeffs), remainder)
     }
 
