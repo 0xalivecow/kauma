@@ -234,6 +234,12 @@ impl Add for Polynomial {
             }
         }
 
+        for i in (0..polynomial.len() - 1).rev() {
+            if polynomial[i].is_zero() {
+                polynomial.pop();
+            }
+        }
+
         Polynomial::new(polynomial)
     }
 }
@@ -690,6 +696,35 @@ mod tests {
     }
 
     #[test]
+    fn test_field_add_multiple_zeros() {
+        let json1 = json!([
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+            "AAAAAAAAAAAAAAAAAAAAAA=="
+        ]);
+        let json2 = json!(["AAAAAAAAAAAAAAAAAAAAAA==", "AAAAAAAAAAAAAAAAAAAAAA=="]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let element2: Polynomial = Polynomial::from_c_array(&json2);
+
+        let sum = element2 + element1;
+
+        assert_eq!(sum.to_c_array(), vec!["AAAAAAAAAAAAAAAAAAAAAA==",]);
+    }
+
+    #[test]
+    fn test_field_add_same_element() {
+        let json1 = json!(["NeverGonnaGiveYouUpAAA=="]);
+        let json2 = json!(["NeverGonnaGiveYouUpAAA=="]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let element2: Polynomial = Polynomial::from_c_array(&json2);
+
+        let sum = element2 + element1;
+
+        assert_eq!(sum.to_c_array(), vec!["AAAAAAAAAAAAAAAAAAAAAA==",]);
+    }
+
+    #[test]
     fn test_field_add_zero() {
         let json1 = json!([
             "NeverGonnaGiveYouUpAAA==",
@@ -956,6 +991,7 @@ mod tests {
         );
         //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
     }
+
     #[test]
     fn test_field_poly_powmod_01() {
         let json1 = json!([
