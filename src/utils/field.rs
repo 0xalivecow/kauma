@@ -81,7 +81,7 @@ impl Polynomial {
 
         if exponent == 0 {
             Polynomial::new(vec![FieldElement::new(
-                polynomial_2_block(vec![1], "gcm").unwrap(),
+                polynomial_2_block(vec![0], "gcm").unwrap(),
             )])
             .div(&modulus)
             .1;
@@ -102,6 +102,23 @@ impl Polynomial {
             //eprintln!("After mod: {:?}", self);
             exponent >>= 1;
         }
+
+        while !result.polynomial.is_empty()
+            && result
+                .polynomial
+                .last()
+                .unwrap()
+                .as_ref()
+                .iter()
+                .all(|&x| x == 0)
+        {
+            result.polynomial.pop();
+        }
+
+        if result.is_empty() {
+            result = Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+        }
+
         result
     }
 
@@ -246,10 +263,13 @@ impl Add for Polynomial {
             }
         }
 
-        for i in (0..polynomial.len() - 1).rev() {
-            if polynomial[i].is_zero() {
-                polynomial.pop();
-            }
+        while !polynomial.is_empty() && polynomial.last().unwrap().as_ref().iter().all(|&x| x == 0)
+        {
+            polynomial.pop();
+        }
+
+        if polynomial.is_empty() {
+            return Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
         }
 
         Polynomial::new(polynomial)
