@@ -1,0 +1,29 @@
+{
+  "testcases": {
+    "b856d760-023d-4b00-bad2-15d2b6da22fe": {
+
+"action": "gfpoly_sort",
+"arguments": {
+"polys": [
+[
+"NeverGonnaGiveYouUpAAA==",
+"NeverGonnaLetYouDownAA==",
+"NeverGonnaRunAroundAAA==",
+"AndDesertYouAAAAAAAAAA=="
+],
+[
+"WereNoStrangersToLoveA==",
+"YouKnowTheRulesAAAAAAA==",
+"AndSoDoIAAAAAAAAAAAAAA=="
+],
+[
+"NeverGonnaMakeYouCryAA==",
+"NeverGonnaSayGoodbyeAA==",
+"NeverGonnaTellALieAAAA==",
+"AndHurtYouAAAAAAAAAAAA=="
+]
+]
+}
+}
+  }
+}

@@ -121,7 +121,13 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
             Ok(json)
         }
         "gfpoly_sort" => {
-            let result = gfpoly_sort(args)?;
+            let sorted_array = gfpoly_sort(args)?;
+            let mut result: Vec<Vec<String>> = vec![];
+
+            for poly in sorted_array {
+                result.push(poly.to_c_array());
+            }
+
             let json = json!({"sorted_polys" : json!(result)});
 
             Ok(json)
