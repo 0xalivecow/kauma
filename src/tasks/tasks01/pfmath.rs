@@ -2,7 +2,7 @@ use anyhow::Result;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use serde_json::Value;
 
-use crate::utils::field::{FieldElement, Polynomial};
+use crate::utils::field::{sort_polynomial_array, FieldElement, Polynomial};
 
 pub fn gfpoly_add(args: &Value) -> Result<Polynomial> {
     let poly_a = Polynomial::from_c_array(&args["A"].clone());
@@ -66,4 +66,76 @@ pub fn gfpoly_powmod(args: &Value) -> Result<Polynomial> {
     let result = poly_a.pow_mod(k, poly_m);
 
     Ok(result)
+}
+
+pub fn gfpoly_sort(args: &Value) -> Result<Vec<Polynomial>> {
+    let poly_arrays: Vec<Value> = serde_json::from_value(args["polys"].clone())?;
+    let mut polys: Vec<Polynomial> = vec![];
+
+    for array in poly_arrays {
+        polys.push(Polynomial::from_c_array(&array));
+    }
+
+    polys.sort();
+    //polys.sort();
+    Ok(polys)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_poly_sorting() {
+        let json1 = json!(
+            {"polys": [
+            [
+                "NeverGonnaGiveYouUpAAA==",
+                "NeverGonnaLetYouDownAA==",
+                "NeverGonnaRunAroundAAA==",
+                "AndDesertYouAAAAAAAAAA=="
+            ],
+            [
+                "WereNoStrangersToLoveA==",
+                "YouKnowTheRulesAAAAAAA==",
+                "AndSoDoIAAAAAAAAAAAAAA=="
+            ],
+            [
+                "NeverGonnaMakeYouCryAA==",
+                "NeverGonnaSayGoodbyeAA==",
+                "NeverGonnaTellALieAAAA==",
+                "AndHurtYouAAAAAAAAAAAA=="
+            ]
+        ]});
+
+        let expected = json!([
+            [
+                "WereNoStrangersToLoveA==",
+                "YouKnowTheRulesAAAAAAA==",
+                "AndSoDoIAAAAAAAAAAAAAA=="
+            ],
+            [
+                "NeverGonnaMakeYouCryAA==",
+                "NeverGonnaSayGoodbyeAA==",
+                "NeverGonnaTellALieAAAA==",
+                "AndHurtYouAAAAAAAAAAAA=="
+            ],
+            [
+                "NeverGonnaGiveYouUpAAA==",
+                "NeverGonnaLetYouDownAA==",
+                "NeverGonnaRunAroundAAA==",
+                "AndDesertYouAAAAAAAAAA=="
+            ]
+        ]);
+
+        let sorted_array = gfpoly_sort(&json1).unwrap();
+        let mut result: Vec<Vec<String>> = vec![];
+        for poly in sorted_array {
+            result.push(poly.to_c_array());
+        }
+
+        assert_eq!(json!(result), expected);
+        //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
+    }
 }
