@@ -8,10 +8,12 @@ use tasks01::{
     gcm::{gcm_decrypt, gcm_encrypt},
     gfmul::gfmul_task,
     pad_oracle::padding_oracle,
-    pfmath::{gfdiv, gfpoly_add, gfpoly_divmod, gfpoly_mul, gfpoly_pow, gfpoly_powmod},
+    pfmath::{
+        gfdiv, gfpoly_add, gfpoly_divmod, gfpoly_mul, gfpoly_pow, gfpoly_powmod, gfpoly_sort,
+    },
     poly2block::poly2block,
     sea128::sea128,
-    xex::{fde_xex},
+    xex::fde_xex,
 };
 
 use anyhow::{anyhow, Result};
@@ -115,6 +117,12 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
         "gfpoly_powmod" => {
             let result = gfpoly_powmod(args)?;
             let json = json!({"Z" : result.to_c_array()});
+
+            Ok(json)
+        }
+        "gfpoly_sort" => {
+            let result = gfpoly_sort(args)?;
+            let json = json!({"sorted_polys" : json!(result)});
 
             Ok(json)
         }

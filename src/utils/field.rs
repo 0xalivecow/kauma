@@ -1,4 +1,7 @@
-use std::ops::{Add, BitXor, Div, Mul, Sub};
+use std::{
+    cmp::Ordering,
+    ops::{Add, BitXor, Div, Mul, Sub},
+};
 
 use anyhow::{anyhow, Ok, Result};
 use base64::prelude::*;
@@ -8,7 +11,7 @@ use crate::utils::poly::polynomial_2_block;
 
 use super::{math::xor_bytes, poly::gfmul};
 
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize)]
 pub struct Polynomial {
     polynomial: Vec<FieldElement>,
 }
@@ -284,17 +287,14 @@ impl Add for Polynomial {
     }
 }
 
-// Helper implementation for subtraction
 impl Sub for &FieldElement {
     type Output = FieldElement;
 
     fn sub(self, rhs: Self) -> FieldElement {
-        // In a field of characteristic 2, addition and subtraction are the same operation (XOR)
         self + rhs
     }
 }
 
-// Helper trait for checking emptiness
 trait IsEmpty {
     fn is_empty(&self) -> bool;
 }
@@ -310,7 +310,66 @@ impl AsRef<[FieldElement]> for Polynomial {
     }
 }
 
-#[derive(Debug)]
+impl PartialEq for Polynomial {
+    fn eq(&self, other: &Self) -> bool {
+        if self.polynomial.len() != other.polynomial.len() {
+            return false;
+        }
+        // Compare each coefficient
+        self.polynomial
+            .iter()
+            .zip(other.polynomial.iter())
+            .all(|(a, b)| a == b)
+    }
+}
+
+impl PartialOrd for Polynomial {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        if self.polynomial.len() != other.polynomial.len() {
+            return Some(self.polynomial.len().cmp(&other.polynomial.len()));
+        } else {
+            for (field_a, field_b) in self.as_ref().iter().rev().zip(other.as_ref().iter().rev()) {
+                match field_a.cmp(field_b) {
+                    std::cmp::Ordering::Equal => continue,
+                    other => return Some(other.reverse()),
+                }
+            }
+            Some(Ordering::Equal)
+        }
+    }
+}
+
+impl Eq for Polynomial {}
+
+impl Ord for Polynomial {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.polynomial.len().cmp(&other.polynomial.len()) {
+            Ordering::Equal => {
+                for (field_a, field_b) in
+                    self.as_ref().iter().rev().zip(other.as_ref().iter().rev())
+                {
+                    match field_a.cmp(field_b) {
+                        std::cmp::Ordering::Equal => continue,
+                        other => return other.reverse(),
+                    }
+                }
+                Ordering::Equal
+            }
+            other => other,
+        }
+    }
+}
+
+pub fn sort_polynomial_array(mut polys: Vec<Polynomial>) -> Result<Vec<Polynomial>> {
+    // Algorithm to sort polynomials
+    // First sorting round
+    // Sorting by degree of polynomial
+    polys.sort();
+
+    Ok(polys)
+}
+
+#[derive(Debug, serde::Serialize)]
 pub struct FieldElement {
     field_element: Vec<u8>,
 }
@@ -462,34 +521,39 @@ impl Div for &FieldElement {
     }
 }
 
-/*
-impl Rem for FieldElement {
-    type Output = Self;
-    fn rem(self, rhs: Self) -> Self::Output {
-        let result: FieldElement = self.field_element;
-
-        while self.field_element[15] != 0x00 {
-            self.field_element
+impl PartialOrd for FieldElement {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        for (byte_a, byte_b) in self.as_ref().iter().rev().zip(other.as_ref().iter().rev()) {
+            match byte_a.reverse_bits().cmp(&byte_b.reverse_bits()) {
+                std::cmp::Ordering::Equal => continue,
+                other => return Some(other),
+            }
         }
-        todo!();
+        Some(Ordering::Equal)
     }
 }
-*/
-/*
-impl BitXor for FieldElement {
-    fn bitxor(self, rhs: Self) -> Self::Output {
-        FieldElement
-    }
-}
-*/
 
-/*
-impl From<Vec<u8>> for FieldElement {
-    fn from(item: Vec<u8>) -> Self {
-        FieldElement { bytes: item }
+impl PartialEq for FieldElement {
+    fn eq(&self, other: &Self) -> bool {
+        self.field_element == other.field_element
     }
 }
-*/
+
+impl Eq for FieldElement {
+    // add code here
+}
+
+impl Ord for FieldElement {
+    fn cmp(&self, other: &Self) -> Ordering {
+        for (byte_a, byte_b) in self.as_ref().iter().zip(other.as_ref().iter()) {
+            match byte_a.reverse_bits().cmp(&byte_b.reverse_bits()) {
+                std::cmp::Ordering::Equal => continue,
+                other => return other,
+            }
+        }
+        Ordering::Equal
+    }
+}
 
 #[derive(Debug)]
 pub struct ByteArray(pub Vec<u8>);
@@ -1110,8 +1174,16 @@ mod tests {
 
     #[test]
     fn test_field_poly_powmod_kn_eqdeg() {
-        let json1 = json!(["JAAAAAAAAAAAAAAAAAAAAA==", "JAAAAAAAAAAAAAAAAAAAAA=="]);
-        let json2 = json!(["KryptoanalyseAAAAAAAAA==", "KryptoanalyseAAAAAAAAA=="]);
+        let json1 = json!([
+            "JAAAAAAAAAAAAAAAAAAAAA==",
+            "JAAAAAAAAAAAAAAAAAAAAA==",
+            "KryptoanalyseAAAAAAAAA=="
+        ]);
+        let json2 = json!([
+            "KryptoanalyseAAAAAAAAA==",
+            "KryptoanalyseAAAAAAAAA==",
+            "JAAAAAAAAABBAAAAAAAAAA=="
+        ]);
         let element1: Polynomial = Polynomial::from_c_array(&json1);
         let modulus: Polynomial = Polynomial::from_c_array(&json2);
 
