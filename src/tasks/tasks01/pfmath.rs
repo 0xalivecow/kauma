@@ -138,4 +138,58 @@ mod tests {
         assert_eq!(json!(result), expected);
         //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
     }
+
+    #[test]
+    fn test_poly_sorting_02() {
+        let json1 = json!(
+            {"polys": [
+    [
+      "AQAAAAAAAAAAAAAAAAAAAA==",  // 0x01
+      "AgAAAAAAAAAAAAAAAAAAAA==",  // 0x02 
+      "AwAAAAAAAAAAAAAAAAAAAA=="   // 0x03
+    ],
+    [
+      "AQAAAAAAAAAAAAAAAAAAAA==",  // 0x01
+      "AgAAAAAAAAAAAAAAAAAAAA==",  // 0x02
+      "BAAAAAAAAAAAAAAAAAAAAA=="   // 0x04
+    ],
+    [
+      "AQAAAAAAAAAAAAAAAAAAAA==",  // 0x01
+      "AgAAAAAAAAAAAAAAAAAAAA=="   // 0x02
+    ],
+    [
+      "AQAAAAAAAAAAAAAAAAAAAA==",  // 0x01
+      "AwAAAAAAAAAAAAAAAAAAAA=="   // 0x03
+    ]
+  ],});
+
+        let expected = json!([
+            [
+                "WereNoStrangersToLoveA==",
+                "YouKnowTheRulesAAAAAAA==",
+                "AndSoDoIAAAAAAAAAAAAAA=="
+            ],
+            [
+                "NeverGonnaMakeYouCryAA==",
+                "NeverGonnaSayGoodbyeAA==",
+                "NeverGonnaTellALieAAAA==",
+                "AndHurtYouAAAAAAAAAAAA=="
+            ],
+            [
+                "NeverGonnaGiveYouUpAAA==",
+                "NeverGonnaLetYouDownAA==",
+                "NeverGonnaRunAroundAAA==",
+                "AndDesertYouAAAAAAAAAA=="
+            ]
+        ]);
+
+        let sorted_array = gfpoly_sort(&json1).unwrap();
+        let mut result: Vec<Vec<String>> = vec![];
+        for poly in sorted_array {
+            result.push(poly.to_c_array());
+        }
+
+        assert_eq!(json!(result), expected);
+        //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
+    }
 }

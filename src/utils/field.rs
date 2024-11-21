@@ -85,13 +85,12 @@ impl Polynomial {
         }
 
         if exponent == 0 {
-            let inter = Polynomial::new(vec![FieldElement::new(
+            let result = Polynomial::new(vec![FieldElement::new(
                 polynomial_2_block(vec![0], "gcm").unwrap(),
             )]);
-            let result = inter.div(&modulus);
 
             eprintln!("Returned value is: {:02X?}", result);
-            return result.1;
+            return result;
         }
 
         //eprintln!("Initial result: {:?}", result);
@@ -324,17 +323,20 @@ impl PartialEq for Polynomial {
 }
 
 impl PartialOrd for Polynomial {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        if self.polynomial.len() != other.polynomial.len() {
-            return Some(self.polynomial.len().cmp(&other.polynomial.len()));
-        } else {
-            for (field_a, field_b) in self.as_ref().iter().rev().zip(other.as_ref().iter().rev()) {
-                match field_a.cmp(field_b) {
-                    std::cmp::Ordering::Equal => continue,
-                    other => return Some(other.reverse()),
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match self.polynomial.len().cmp(&other.polynomial.len()) {
+            Ordering::Equal => {
+                for (field_a, field_b) in
+                    self.as_ref().iter().rev().zip(other.as_ref().iter().rev())
+                {
+                    match field_a.cmp(field_b) {
+                        std::cmp::Ordering::Equal => continue,
+                        other => return Some(other.reverse()),
+                    }
                 }
+                Some(Ordering::Equal)
             }
-            Some(Ordering::Equal)
+            other => Some(other),
         }
     }
 }
@@ -1170,6 +1172,20 @@ mod tests {
             result.to_c_array(),
             vec!["JAAAAAAAAAAAAAAAAAAAAA==", "JAAAAAAAAAAAAAAAAAAAAA=="]
         );
+    }
+
+    #[test]
+    fn test_field_poly_powmod_k0_special() {
+        let json1 = json!(["NeverGonnaGiveYouUpAAA=="]);
+        let json2 = json!(["NeverGonnaGiveYouUpAAA=="]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        let modulus: Polynomial = Polynomial::from_c_array(&json2);
+
+        let result = element1.pow_mod(0, modulus);
+
+        eprintln!("Result is: {:02X?}", result);
+
+        assert_eq!(result.to_c_array(), vec!["gAAAAAAAAAAAAAAAAAAAAA=="]);
     }
 
     #[test]
