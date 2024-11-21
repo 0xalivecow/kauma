@@ -324,17 +324,20 @@ impl PartialEq for Polynomial {
 }
 
 impl PartialOrd for Polynomial {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        if self.polynomial.len() != other.polynomial.len() {
-            return Some(self.polynomial.len().cmp(&other.polynomial.len()));
-        } else {
-            for (field_a, field_b) in self.as_ref().iter().rev().zip(other.as_ref().iter().rev()) {
-                match field_a.cmp(field_b) {
-                    std::cmp::Ordering::Equal => continue,
-                    other => return Some(other.reverse()),
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match self.polynomial.len().cmp(&other.polynomial.len()) {
+            Ordering::Equal => {
+                for (field_a, field_b) in
+                    self.as_ref().iter().rev().zip(other.as_ref().iter().rev())
+                {
+                    match field_a.cmp(field_b) {
+                        std::cmp::Ordering::Equal => continue,
+                        other => return Some(other.reverse()),
+                    }
                 }
+                Some(Ordering::Equal)
             }
-            Some(Ordering::Equal)
+            other => Some(other),
         }
     }
 }
