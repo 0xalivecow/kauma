@@ -1,5 +1,6 @@
 use std::{
     cmp::Ordering,
+    mem::discriminant,
     ops::{Add, BitXor, Div, Mul, Sub},
 };
 
@@ -9,7 +10,10 @@ use serde_json::Value;
 
 use crate::utils::poly::polynomial_2_block;
 
-use super::{math::xor_bytes, poly::gfmul};
+use super::{
+    math::{reverse_bits_in_bytevec, xor_bytes},
+    poly::gfmul,
+};
 
 #[derive(Debug, serde::Serialize)]
 pub struct Polynomial {
@@ -211,6 +215,16 @@ impl Polynomial {
         }
         true
     }
+
+    fn monic(mut self) -> Self {
+        let divident = self.polynomial.last().unwrap().clone();
+
+        for fieldelement in &mut self.polynomial.iter_mut() {
+            *fieldelement = fieldelement.clone() / divident.clone();
+        }
+
+        todo!();
+    }
 }
 
 impl Clone for Polynomial {
@@ -325,19 +339,21 @@ impl PartialEq for Polynomial {
 
 impl PartialOrd for Polynomial {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match self.polynomial.len().cmp(&other.polynomial.len()) {
+        match other.polynomial.len().cmp(&self.polynomial.len()) {
             Ordering::Equal => {
-                for (field_a, field_b) in
-                    self.as_ref().iter().rev().zip(other.as_ref().iter().rev())
-                {
-                    match field_a.cmp(field_b) {
-                        std::cmp::Ordering::Equal => continue,
-                        other => return Some(other.reverse()),
+                for (field_a, field_b) in self.as_ref().iter().zip(other.as_ref().iter()) {
+                    match field_a
+                        .reverse_bits()
+                        .partial_cmp(&field_b.reverse_bits())
+                        .unwrap()
+                    {
+                        Ordering::Equal => continue,
+                        other => return Some(other),
                     }
                 }
                 Some(Ordering::Equal)
             }
-            other => Some(other),
+            other => Some(other.reverse()),
         }
     }
 }
@@ -346,19 +362,17 @@ impl Eq for Polynomial {}
 
 impl Ord for Polynomial {
     fn cmp(&self, other: &Self) -> Ordering {
-        match self.polynomial.len().cmp(&other.polynomial.len()) {
+        match other.polynomial.len().cmp(&self.polynomial.len()) {
             Ordering::Equal => {
-                for (field_a, field_b) in
-                    self.as_ref().iter().rev().zip(other.as_ref().iter().rev())
-                {
-                    match field_a.cmp(field_b) {
-                        std::cmp::Ordering::Equal => continue,
-                        other => return other.reverse(),
+                for (field_a, field_b) in self.as_ref().iter().zip(other.as_ref().iter()) {
+                    match field_a.reverse_bits().cmp(&field_b.reverse_bits()) {
+                        Ordering::Equal => continue,
+                        other => return other,
                     }
                 }
                 Ordering::Equal
             }
-            other => other,
+            other => other.reverse(),
         }
     }
 }
@@ -432,6 +446,10 @@ impl FieldElement {
 
     fn is_zero(&self) -> bool {
         self.field_element.iter().all(|&x| x == 0x00)
+    }
+
+    fn reverse_bits(&self) -> Self {
+        FieldElement::new(reverse_bits_in_bytevec(self.field_element.clone()))
     }
 }
 
@@ -526,10 +544,10 @@ impl Div for &FieldElement {
 
 impl PartialOrd for FieldElement {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        for (byte_a, byte_b) in self.as_ref().iter().rev().zip(other.as_ref().iter().rev()) {
-            match byte_a.reverse_bits().cmp(&byte_b.reverse_bits()) {
+        for (byte_a, byte_b) in self.as_ref().iter().zip(other.as_ref().iter()) {
+            match byte_a.partial_cmp(&byte_b).unwrap() {
                 std::cmp::Ordering::Equal => continue,
-                other => return Some(other),
+                other => return Some(other.reverse()),
             }
         }
         Some(Ordering::Equal)
@@ -549,9 +567,9 @@ impl Eq for FieldElement {
 impl Ord for FieldElement {
     fn cmp(&self, other: &Self) -> Ordering {
         for (byte_a, byte_b) in self.as_ref().iter().zip(other.as_ref().iter()) {
-            match byte_a.reverse_bits().cmp(&byte_b.reverse_bits()) {
+            match byte_a.cmp(&byte_b) {
                 std::cmp::Ordering::Equal => continue,
-                other => return other,
+                other => return other.reverse(),
             }
         }
         Ordering::Equal
