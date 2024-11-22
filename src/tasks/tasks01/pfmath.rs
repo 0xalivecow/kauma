@@ -143,43 +143,38 @@ mod tests {
     fn test_poly_sorting_02() {
         let json1 = json!(
             {"polys": [
-    [
-      "AQAAAAAAAAAAAAAAAAAAAA==",  // 0x01
-      "AgAAAAAAAAAAAAAAAAAAAA==",  // 0x02 
-      "AwAAAAAAAAAAAAAAAAAAAA=="   // 0x03
-    ],
-    [
-      "AQAAAAAAAAAAAAAAAAAAAA==",  // 0x01
-      "AgAAAAAAAAAAAAAAAAAAAA==",  // 0x02
-      "BAAAAAAAAAAAAAAAAAAAAA=="   // 0x04
-    ],
-    [
-      "AQAAAAAAAAAAAAAAAAAAAA==",  // 0x01
-      "AgAAAAAAAAAAAAAAAAAAAA=="   // 0x02
-    ],
-    [
-      "AQAAAAAAAAAAAAAAAAAAAA==",  // 0x01
-      "AwAAAAAAAAAAAAAAAAAAAA=="   // 0x03
-    ]
-  ],});
+            [
+            "AQAAAAAAAAAAAAAAAAAAAA==",  // 0x01
+            "AgAAAAAAAAAAAAAAAAAAAA==",  // 0x02 
+            "AwAAAAAAAAAAAAAAAAAAAA=="   // 0x03
+            ],
+            [
+            "AQAAAAAAAAAAAAAAAAAAAA==",  // 0x01
+            "AgAAAAAAAAAAAAAAAAAAAA==",  // 0x02
+            "BAAAAAAAAAAAAAAAAAAAAA=="   // 0x04
+            ],
+            [
+            "AQAAAAAAAAAAAAAAAAAAAA==",  // 0x01
+            "AgAAAAAAAAAAAAAAAAAAAA=="   // 0x02
+            ],
+            [
+            "AQAAAAAAAAAAAAAAAAAAAA==",  // 0x01
+            "AwAAAAAAAAAAAAAAAAAAAA=="   // 0x03
+            ]
+        ],});
 
         let expected = json!([
+            ["AQAAAAAAAAAAAAAAAAAAAA==", "AgAAAAAAAAAAAAAAAAAAAA=="],
+            ["AQAAAAAAAAAAAAAAAAAAAA==", "AwAAAAAAAAAAAAAAAAAAAA=="],
             [
-                "WereNoStrangersToLoveA==",
-                "YouKnowTheRulesAAAAAAA==",
-                "AndSoDoIAAAAAAAAAAAAAA=="
+                "AQAAAAAAAAAAAAAAAAAAAA==",
+                "AgAAAAAAAAAAAAAAAAAAAA==",
+                "BAAAAAAAAAAAAAAAAAAAAA=="
             ],
             [
-                "NeverGonnaMakeYouCryAA==",
-                "NeverGonnaSayGoodbyeAA==",
-                "NeverGonnaTellALieAAAA==",
-                "AndHurtYouAAAAAAAAAAAA=="
-            ],
-            [
-                "NeverGonnaGiveYouUpAAA==",
-                "NeverGonnaLetYouDownAA==",
-                "NeverGonnaRunAroundAAA==",
-                "AndDesertYouAAAAAAAAAA=="
+                "AQAAAAAAAAAAAAAAAAAAAA==",
+                "AgAAAAAAAAAAAAAAAAAAAA==",
+                "AwAAAAAAAAAAAAAAAAAAAA=="
             ]
         ]);
 
