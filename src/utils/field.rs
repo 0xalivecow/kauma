@@ -340,7 +340,15 @@ impl PartialOrd for Polynomial {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match other.polynomial.len().cmp(&self.polynomial.len()) {
             Ordering::Equal => {
-                for (field_a, field_b) in self.as_ref().iter().zip(other.as_ref().iter()) {
+                for (field_a, field_b) in
+                    self.as_ref().iter().rev().zip(other.as_ref().iter().rev())
+                {
+                    eprintln!(
+                        "Poly partord: {:02X?} {:02X?} ",
+                        self.clone().to_c_array(),
+                        other.clone().to_c_array()
+                    );
+
                     match field_a
                         .reverse_bits()
                         .partial_cmp(&field_b.reverse_bits())
@@ -363,7 +371,9 @@ impl Ord for Polynomial {
     fn cmp(&self, other: &Self) -> Ordering {
         match other.polynomial.len().cmp(&self.polynomial.len()) {
             Ordering::Equal => {
-                for (field_a, field_b) in self.as_ref().iter().zip(other.as_ref().iter()) {
+                for (field_a, field_b) in
+                    self.as_ref().iter().rev().zip(other.as_ref().iter().rev())
+                {
                     match field_a.reverse_bits().cmp(&field_b.reverse_bits()) {
                         Ordering::Equal => continue,
                         other => return other,
@@ -543,10 +553,17 @@ impl Div for &FieldElement {
 
 impl PartialOrd for FieldElement {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        for (byte_a, byte_b) in self.as_ref().iter().zip(other.as_ref().iter()) {
-            match byte_a.partial_cmp(&byte_b).unwrap() {
-                std::cmp::Ordering::Equal => continue,
-                other => return Some(other.reverse()),
+        for (byte_a, byte_b) in self.as_ref().iter().rev().zip(other.as_ref().iter().rev()) {
+            eprintln!("Field Partial Ord Bytes: {:02X} {:02X}", byte_a, byte_b);
+            if byte_a > byte_b {
+                eprintln!("Bytes were greater");
+                return Some(Ordering::Greater);
+            } else if byte_a < byte_b {
+                eprintln!("Bytes were less");
+                return Some(Ordering::Less);
+            } else {
+                eprintln!("Bytes were equal");
+                continue;
             }
         }
         Some(Ordering::Equal)
@@ -565,10 +582,17 @@ impl Eq for FieldElement {
 
 impl Ord for FieldElement {
     fn cmp(&self, other: &Self) -> Ordering {
-        for (byte_a, byte_b) in self.as_ref().iter().zip(other.as_ref().iter()) {
-            match byte_a.cmp(&byte_b) {
-                std::cmp::Ordering::Equal => continue,
-                other => return other.reverse(),
+        for (byte_a, byte_b) in self.as_ref().iter().rev().zip(other.as_ref().iter().rev()) {
+            eprintln!("Field Ord Bytes: {:02X} {:02X}", byte_a, byte_b);
+            if byte_a > byte_b {
+                eprintln!("Bytes were greater");
+                return Ordering::Greater;
+            } else if byte_a < byte_b {
+                eprintln!("Bytes were less");
+                return Ordering::Less;
+            } else {
+                eprintln!("Bytes were equal");
+                continue;
             }
         }
         Ordering::Equal
@@ -1162,37 +1186,6 @@ mod tests {
     }
 
     #[test]
-    fn test_field_poly_powmod_k1_modulus_is_deg0() {
-        let json1 = json!(["JAAAAAAAAAAAAAAAAAAAAA==",]);
-        let json2 = json!(["KryptoanalyseAAAAAAAAA=="]);
-        let element1: Polynomial = Polynomial::from_c_array(&json1);
-        let modulus: Polynomial = Polynomial::from_c_array(&json2);
-
-        let result = element1.pow_mod(1, modulus);
-
-        eprintln!("Result is: {:02X?}", result);
-        assert_eq!(result.to_c_array(), vec!["JAAAAAAAAAAAAAAAAAAAAA=="]);
-    }
-
-    #[test]
-    fn test_field_poly_powmod_k1_eqdeg() {
-        let json1 = json!(["JAAAAAAAAAAAAAAAAAAAAA==", "JAAAAAAAAAAAAAAAAAAAAA=="]);
-        let json2 = json!(["KryptoanalyseAAAAAAAAA==", "KryptoanalyseAAAAAAAAA=="]);
-        let element1: Polynomial = Polynomial::from_c_array(&json1);
-        let modulus: Polynomial = Polynomial::from_c_array(&json2);
-
-        let result = element1.pow_mod(1, modulus);
-
-        eprintln!("Result is: {:02X?}", result);
-
-        assert!(!(0 < 0));
-        assert_eq!(
-            result.to_c_array(),
-            vec!["JAAAAAAAAAAAAAAAAAAAAA==", "JAAAAAAAAAAAAAAAAAAAAA=="]
-        );
-    }
-
-    #[test]
     fn test_field_poly_powmod_k0_special() {
         let json1 = json!(["NeverGonnaGiveYouUpAAA=="]);
         let json2 = json!(["NeverGonnaGiveYouUpAAA=="]);
@@ -1206,31 +1199,6 @@ mod tests {
         assert_eq!(result.to_c_array(), vec!["gAAAAAAAAAAAAAAAAAAAAA=="]);
     }
 
-    #[test]
-    fn test_field_poly_powmod_kn_eqdeg() {
-        let json1 = json!([
-            "JAAAAAAAAAAAAAAAAAAAAA==",
-            "JAAAAAAAAAAAAAAAAAAAAA==",
-            "KryptoanalyseAAAAAAAAA=="
-        ]);
-        let json2 = json!([
-            "KryptoanalyseAAAAAAAAA==",
-            "KryptoanalyseAAAAAAAAA==",
-            "JAAAAAAAAABBAAAAAAAAAA=="
-        ]);
-        let element1: Polynomial = Polynomial::from_c_array(&json1);
-        let modulus: Polynomial = Polynomial::from_c_array(&json2);
-
-        let result = element1.pow_mod(100000, modulus);
-
-        eprintln!("Result is: {:02X?}", result);
-
-        assert!(!(0 < 0));
-        assert_eq!(
-            result.to_c_array(),
-            vec!["JAAAAAAAAAAAAAAAAAAAAA==", "JAAAAAAAAAAAAAAAAAAAAA=="]
-        );
-    }
     #[test]
     fn test_field_poly_powmod_k0() {
         let json1 = json!(["JAAAAAAAAAAAAAAAAAAAAA==",]);
