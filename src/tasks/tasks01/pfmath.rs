@@ -82,11 +82,11 @@ pub fn gfpoly_sort(args: &Value) -> Result<Vec<Polynomial>> {
 }
 
 pub fn gfpoly_make_monic(args: &Value) -> Result<Polynomial> {
-    let mut poly_a = Polynomial::from_c_array(&args["A"].clone());
+    let poly_a = Polynomial::from_c_array(&args["A"].clone());
 
-    poly_a.monic();
+    let result = poly_a.monic();
 
-    Ok(poly_a)
+    Ok(result)
 }
 
 pub fn gfpoly_sqrt(args: &Value) -> Result<Polynomial> {

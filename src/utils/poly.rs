@@ -256,7 +256,7 @@ impl Polynomial {
         true
     }
 
-    pub fn monic(&mut self) {
+    pub fn monic(mut self) -> Self {
         let divident = self.polynomial.last().unwrap().clone();
 
         for fieldelement in &mut self.polynomial.iter_mut() {
@@ -274,6 +274,11 @@ impl Polynomial {
         {
             self.polynomial.pop();
         }
+
+        if self.is_empty() {
+            self = Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+        }
+        self
     }
 
     pub fn sqrt(self) -> Self {
@@ -1129,22 +1134,22 @@ mod tests {
             "1Ial5rAJGOucIdUe3zh5bw==",
             "gAAAAAAAAAAAAAAAAAAAAA=="
         ]);
-        let mut element1: Polynomial = Polynomial::from_c_array(&json1);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
 
-        element1.monic();
+        let result = element1.monic();
 
-        assert_eq!(json!(element1.to_c_array()), expected);
+        assert_eq!(json!(result.to_c_array()), expected);
     }
 
     #[test]
     fn test_poly_monic_poly_zero() {
         let json1 = json!(["AAAAAAAAAAAAAAAAAAAAAA=="]);
         let expected = json!(["AAAAAAAAAAAAAAAAAAAAAA=="]);
-        let mut element1: Polynomial = Polynomial::from_c_array(&json1);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
 
-        element1.monic();
+        let result = element1.monic();
 
-        assert_eq!(json!(element1.to_c_array()), expected);
+        assert_eq!(json!(result.to_c_array()), expected);
     }
 
     #[test]
@@ -1156,11 +1161,11 @@ mod tests {
             "AAAAAAAAAAAAAAAAAAAAAA=="
         ]);
         let expected = json!(["AAAAAAAAAAAAAAAAAAAAAA=="]);
-        let mut element1: Polynomial = Polynomial::from_c_array(&json1);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
 
-        element1.monic();
+        let result = element1.monic();
 
-        assert_eq!(json!(element1.to_c_array()), expected);
+        assert_eq!(json!(result.to_c_array()), expected);
     }
 
     #[test]
