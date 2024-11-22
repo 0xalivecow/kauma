@@ -36,20 +36,45 @@ impl FieldElement {
         BASE64_STANDARD.encode(&self.field_element)
     }
 
-    pub fn pow(&self, mut exponent: u128) -> FieldElement {
+    pub fn pow(mut self, mut exponent: u128) -> FieldElement {
+        let mut result: FieldElement =
+            FieldElement::new(polynomial_2_block(vec![0], "gcm").unwrap());
+
+        if exponent == 1 {
+            eprintln!("special case 1: {:02X?}", self.clone());
+
+            return self;
+        }
+
         if exponent == 0 {
-            // Return polynomial with coefficient 1
-            return FieldElement::new(vec![1]);
+            let result = FieldElement::new(polynomial_2_block(vec![0], "gcm").unwrap());
+
+            eprintln!("Returned value is: {:02X?}", result);
+            return result;
         }
 
-        let base = self.clone();
-        let mut result = base.clone();
-        exponent -= 1; // Subtract 1 because we already set result to base
-
+        //eprintln!("Initial result: {:?}", result);
         while exponent > 0 {
-            result = result * base.clone();
-            exponent -= 1;
+            //eprintln!("Current exponent: {:02X}", exponent);
+            if exponent & 1 == 1 {
+                let temp = &self * &result;
+                eprintln!("Mult");
+                eprintln!("After mod: {:?}", temp);
+
+                result = temp
+            }
+            let temp_square = &self * &self;
+            eprintln!("Square");
+
+            eprintln!("After squaring: {:?}", temp_square);
+            self = temp_square;
+            //eprintln!("After mod: {:?}", self);
+            exponent >>= 1;
         }
+
+        eprintln!("result in powmod before reduction: {:02X?}", result);
+
+        eprintln!("result in powmod after reduction: {:02X?}", result);
 
         result
     }
