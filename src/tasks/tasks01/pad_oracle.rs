@@ -3,7 +3,6 @@ use base64::prelude::*;
 use serde_json::Value;
 use std::io::prelude::*;
 use std::net::TcpStream;
-use std::time::Instant;
 use std::usize;
 
 pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {

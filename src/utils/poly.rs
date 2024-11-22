@@ -4,15 +4,13 @@ use std::{str::FromStr, u128, u8, usize};
 
 use std::{
     cmp::Ordering,
-    mem::discriminant,
-    ops::{Add, BitXor, Div, Mul, Sub},
+    ops::{Add, Div, Mul},
 };
 
 use anyhow::{anyhow, Ok, Result};
 use serde_json::Value;
 
 use super::field::FieldElement;
-use super::math::{reverse_bits_in_bytevec, xor_bytes};
 
 #[derive(Debug, serde::Serialize)]
 pub struct Polynomial {
