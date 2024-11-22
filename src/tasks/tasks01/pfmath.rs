@@ -2,7 +2,7 @@ use anyhow::Result;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use serde_json::Value;
 
-use crate::utils::field::{sort_polynomial_array, FieldElement, Polynomial};
+use crate::utils::{field::FieldElement, poly::Polynomial};
 
 pub fn gfpoly_add(args: &Value) -> Result<Polynomial> {
     let poly_a = Polynomial::from_c_array(&args["A"].clone());
