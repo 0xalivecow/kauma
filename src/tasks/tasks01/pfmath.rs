@@ -81,6 +81,22 @@ pub fn gfpoly_sort(args: &Value) -> Result<Vec<Polynomial>> {
     Ok(polys)
 }
 
+pub fn gfpoly_make_monic(args: &Value) -> Result<Polynomial> {
+    let mut poly_a = Polynomial::from_c_array(&args["A"].clone());
+
+    poly_a.monic();
+
+    Ok(poly_a)
+}
+
+pub fn gfpoly_sqrt(args: &Value) -> Result<Polynomial> {
+    let poly_a = Polynomial::from_c_array(&args["Q"].clone());
+
+    let result = poly_a.sqrt();
+
+    Ok(result)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

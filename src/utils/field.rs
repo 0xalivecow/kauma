@@ -58,23 +58,23 @@ impl FieldElement {
             //eprintln!("Current exponent: {:02X}", exponent);
             if exponent & 1 == 1 {
                 let temp = &self * &result;
-                eprintln!("Mult");
-                eprintln!("After mod: {:?}", temp);
+                //eprintln!("Mult");
+                //eprintln!("After mod: {:?}", temp);
 
                 result = temp
             }
             let temp_square = &self * &self;
-            eprintln!("Square");
+            // eprintln!("Square");
 
-            eprintln!("After squaring: {:?}", temp_square);
+            // eprintln!("After squaring: {:?}", temp_square);
             self = temp_square;
             //eprintln!("After mod: {:?}", self);
             exponent >>= 1;
         }
 
-        eprintln!("result in powmod before reduction: {:02X?}", result);
+        // eprintln!("result in powmod before reduction: {:02X?}", result);
 
-        eprintln!("result in powmod after reduction: {:02X?}", result);
+        // eprintln!("result in powmod after reduction: {:02X?}", result);
 
         result
     }

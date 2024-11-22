@@ -9,7 +9,8 @@ use tasks01::{
     gfmul::gfmul_task,
     pad_oracle::padding_oracle,
     pfmath::{
-        gfdiv, gfpoly_add, gfpoly_divmod, gfpoly_mul, gfpoly_pow, gfpoly_powmod, gfpoly_sort,
+        gfdiv, gfpoly_add, gfpoly_divmod, gfpoly_make_monic, gfpoly_mul, gfpoly_pow, gfpoly_powmod,
+        gfpoly_sort, gfpoly_sqrt,
     },
     poly2block::poly2block,
     sea128::sea128,
@@ -129,6 +130,18 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
             }
 
             let json = json!({"sorted_polys" : json!(result)});
+
+            Ok(json)
+        }
+        "gfpoly_make_monic" => {
+            let result = gfpoly_make_monic(args)?;
+            let json = json!({"S" : result.to_c_array()});
+
+            Ok(json)
+        }
+        "gfpoly_sqrt" => {
+            let result = gfpoly_sqrt(args)?;
+            let json = json!({"S" : result.to_c_array()});
 
             Ok(json)
         }
