@@ -311,6 +311,22 @@ impl Polynomial {
             }
         }
 
+        while !self.polynomial.is_empty()
+            && self
+                .polynomial
+                .last()
+                .unwrap()
+                .as_ref()
+                .iter()
+                .all(|&x| x == 0)
+        {
+            self.polynomial.pop();
+        }
+
+        if self.is_empty() {
+            self = Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+        }
+
         self
     }
 }
@@ -1251,7 +1267,7 @@ mod tests {
 
         assert_eq!(json!(result.to_c_array()), expected);
     }
-
+  
     #[test]
     fn test_poly_gcd() {
         let a = json!([
