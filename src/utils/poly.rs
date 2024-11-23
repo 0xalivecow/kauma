@@ -467,6 +467,14 @@ impl Ord for Polynomial {
     }
 }
 
+pub fn gcd(a: Polynomial, b: Polynomial) -> Polynomial {
+    if a.is_zero() {
+        return b;
+    }
+
+    return gcd(b.div(&a).1.monic(), a);
+}
+
 pub fn sort_polynomial_array(mut polys: Vec<Polynomial>) -> Result<Vec<Polynomial>> {
     // Algorithm to sort polynomials
     // First sorting round
@@ -1223,6 +1231,60 @@ mod tests {
         eprintln!("Starting poly sqrt");
 
         let result = element1.diff();
+
+        assert_eq!(json!(result.to_c_array()), expected);
+    }
+
+    #[test]
+    fn test_poly_diff_multi_zero() {
+        let json1 = json!([
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+        ]);
+        let expected = json!(["AAAAAAAAAAAAAAAAAAAAAA==",]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+
+        let result = element1.diff();
+
+        assert_eq!(json!(result.to_c_array()), expected);
+    }
+
+    #[test]
+    fn test_poly_gcd() {
+        let a = json!([
+            "DNWpXnnY24XecPa7a8vrEA==",
+            "I8uYpCbsiPaVvUznuv1IcA==",
+            "wsbiU432ARWuO93He3vbvA==",
+            "zp0g3o8iNz7Y+8oUxw1vJw==",
+            "J0GekE3uendpN6WUAuJ4AA==",
+            "wACd0e6u1ii4AAAAAAAAAA==",
+            "ACAAAAAAAAAAAAAAAAAAAA=="
+        ]);
+        let b = json!([
+            "I20VjJmlSnRSe88gaDiLRQ==",
+            "0Cw5HxJm/pfybJoQDf7/4w==",
+            "8ByrMMf+vVj5r3YXUNCJ1g==",
+            "rEU/f2UZRXqmZ6V7EPKfBA==",
+            "LfdALhvCrdhhGZWl9l9DSg==",
+            "KSUKhN0n6/DZmHPozd1prw==",
+            "DQrRkuA9Zx279wAAAAAAAA==",
+            "AhCEAAAAAAAAAAAAAAAAAA=="
+        ]);
+        let expected = json!([
+            "NeverGonnaMakeYouCryAA==",
+            "NeverGonnaSayGoodbyeAA==",
+            "NeverGonnaTellALieAAAA==",
+            "AndHurtYouAAAAAAAAAAAA==",
+            "gAAAAAAAAAAAAAAAAAAAAA=="
+        ]);
+
+        let a: Polynomial = Polynomial::from_c_array(&a);
+        let b: Polynomial = Polynomial::from_c_array(&b);
+
+        let result = gcd(a.monic(), b.monic());
 
         assert_eq!(json!(result.to_c_array()), expected);
     }
