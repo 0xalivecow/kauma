@@ -135,7 +135,7 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
         }
         "gfpoly_make_monic" => {
             let result = gfpoly_make_monic(args)?;
-            let json = json!({"S" : result.to_c_array()});
+            let json = json!({"A*" : result.to_c_array()});
 
             Ok(json)
         }
