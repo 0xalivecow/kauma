@@ -1267,7 +1267,7 @@ mod tests {
 
         assert_eq!(json!(result.to_c_array()), expected);
     }
-  
+
     #[test]
     fn test_poly_gcd() {
         let a = json!([
@@ -1296,6 +1296,20 @@ mod tests {
             "AndHurtYouAAAAAAAAAAAA==",
             "gAAAAAAAAAAAAAAAAAAAAA=="
         ]);
+
+        let a: Polynomial = Polynomial::from_c_array(&a);
+        let b: Polynomial = Polynomial::from_c_array(&b);
+
+        let result = gcd(a.monic(), b.monic());
+
+        assert_eq!(json!(result.to_c_array()), expected);
+    }
+
+    #[test]
+    fn test_poly_gcd_zero() {
+        let a = json!(["AAAAAAAAAAAAAAAAAAAAAA==",]);
+        let b = json!(["AAAAAAAAAAAAAAAAAAAAAA=="]);
+        let expected = json!(["AAAAAAAAAAAAAAAAAAAAAA=="]);
 
         let a: Polynomial = Polynomial::from_c_array(&a);
         let b: Polynomial = Polynomial::from_c_array(&b);
