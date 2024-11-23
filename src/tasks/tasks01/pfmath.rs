@@ -2,7 +2,10 @@ use anyhow::Result;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use serde_json::Value;
 
-use crate::utils::{field::FieldElement, poly::Polynomial};
+use crate::utils::{
+    field::FieldElement,
+    poly::{gcd, Polynomial},
+};
 
 pub fn gfpoly_add(args: &Value) -> Result<Polynomial> {
     let poly_a = Polynomial::from_c_array(&args["A"].clone());
@@ -101,6 +104,15 @@ pub fn gfpoly_diff(args: &Value) -> Result<Polynomial> {
     let poly_f = Polynomial::from_c_array(&args["F"].clone());
 
     let result = poly_f.diff();
+
+    Ok(result)
+}
+
+pub fn gfpoly_gcd(args: &Value) -> Result<Polynomial> {
+    let poly_a = Polynomial::from_c_array(&args["A"].clone());
+    let poly_b = Polynomial::from_c_array(&args["B"].clone());
+
+    let result = gcd(poly_a, poly_b);
 
     Ok(result)
 }
