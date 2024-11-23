@@ -24,6 +24,10 @@ impl FieldElement {
         87, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01,
     ];
 
+    pub fn zero(self) -> Self {
+        FieldElement::new(vec![0])
+    }
+
     pub const fn new(field_element: Vec<u8>) -> Self {
         Self { field_element }
     }

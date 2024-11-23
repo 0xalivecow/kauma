@@ -97,6 +97,14 @@ pub fn gfpoly_sqrt(args: &Value) -> Result<Polynomial> {
     Ok(result)
 }
 
+pub fn gfpoly_diff(args: &Value) -> Result<Polynomial> {
+    let poly_f = Polynomial::from_c_array(&args["F"].clone());
+
+    let result = poly_f.diff();
+
+    Ok(result)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

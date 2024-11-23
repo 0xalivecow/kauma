@@ -292,6 +292,27 @@ impl Polynomial {
 
         Polynomial::new(result)
     }
+
+    pub fn diff(mut self) -> Self {
+        // Pop first element
+        // Check if the polynomial is 1 or less. In this case, output would be [] without check
+        // Output should be [0; 16] however
+        if self.polynomial.len() > 1 {
+            self.polynomial.remove(0);
+        } else {
+            return Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+        }
+
+        for (position, element) in self.polynomial.iter_mut().enumerate() {
+            // Set all uneven degrees to 0, as they were the even degrees before
+            // As we are in GF128, this means they become 0 after mul with even number
+            if position % 2 == 1 {
+                *element = FieldElement::new(vec![0; 16]);
+            }
+        }
+
+        self
+    }
 }
 
 impl Clone for Polynomial {
@@ -645,26 +666,6 @@ mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
-    /*
-    * TODO: Consider removing
-    #[test]
-    fn coefficients_to_byte_arr_xex_test1() {
-        let coefficients: Vec<u8> = vec![0];
-        let byte_array = vec![
-            01, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00,
-        ];
-        assert_eq!(coefficients_to_byte_arr_xex(coefficients), byte_array)
-    }
-
-    #[test]
-    fn coefficients_to_byte_arr_xex_test2() {
-        let coefficients: Vec<u8> = vec![127, 12, 9, 0];
-        let byte_array = vec![
-            01, 12, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 80,
-        ];
-        assert_eq!(coefficients_to_byte_arr_xex(coefficients), byte_array)
-    }
-    */
     #[test]
     fn byte_indices_0x01() {
         let byte: u8 = 0x01;
@@ -1189,6 +1190,39 @@ mod tests {
         eprintln!("Starting poly sqrt");
 
         let result = element1.sqrt();
+
+        assert_eq!(json!(result.to_c_array()), expected);
+    }
+
+    #[test]
+    fn test_poly_diff() {
+        let json1 = json!([
+            "IJustWannaTellYouAAAAA==",
+            "HowImFeelingAAAAAAAAAA==",
+            "GottaMakeYouAAAAAAAAAA==",
+            "UnderstaaaaaaaaaaaaanQ=="
+        ]);
+        let expected = json!([
+            "HowImFeelingAAAAAAAAAA==",
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+            "UnderstaaaaaaaaaaaaanQ=="
+        ]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        eprintln!("Starting poly sqrt");
+
+        let result = element1.diff();
+
+        assert_eq!(json!(result.to_c_array()), expected);
+    }
+
+    #[test]
+    fn test_poly_diff_len1() {
+        let json1 = json!(["IJustWannaTellYouAAAAA==",]);
+        let expected = json!(["AAAAAAAAAAAAAAAAAAAAAA==",]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        eprintln!("Starting poly sqrt");
+
+        let result = element1.diff();
 
         assert_eq!(json!(result.to_c_array()), expected);
     }
