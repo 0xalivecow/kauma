@@ -311,6 +311,22 @@ impl Polynomial {
             }
         }
 
+        while !self.polynomial.is_empty()
+            && self
+                .polynomial
+                .last()
+                .unwrap()
+                .as_ref()
+                .iter()
+                .all(|&x| x == 0)
+        {
+            self.polynomial.pop();
+        }
+
+        if self.is_empty() {
+            self = Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+        }
+
         self
     }
 }
@@ -1218,6 +1234,24 @@ mod tests {
     #[test]
     fn test_poly_diff_len1() {
         let json1 = json!(["IJustWannaTellYouAAAAA==",]);
+        let expected = json!(["AAAAAAAAAAAAAAAAAAAAAA==",]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        eprintln!("Starting poly sqrt");
+
+        let result = element1.diff();
+
+        assert_eq!(json!(result.to_c_array()), expected);
+    }
+
+    #[test]
+    fn test_poly_diff_multi_zero() {
+        let json1 = json!([
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+            "AAAAAAAAAAAAAAAAAAAAAA==",
+        ]);
         let expected = json!(["AAAAAAAAAAAAAAAAAAAAAA==",]);
         let element1: Polynomial = Polynomial::from_c_array(&json1);
         eprintln!("Starting poly sqrt");
