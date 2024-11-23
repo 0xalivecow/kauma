@@ -1,3 +1,5 @@
+use std::usize;
+
 use serde::{Deserialize, Serialize};
 
 use crate::utils::{
@@ -10,13 +12,13 @@ use super::poly::Polynomial;
 #[derive(Debug, Serialize, Deserialize)]
 struct Factors {
     factor: Vec<String>,
-    exponent: u32,
+    exponent: usize,
 }
 
-pub fn sff(mut f: Polynomial) -> Vec<(Polynomial, u32)> {
+pub fn sff(mut f: Polynomial) -> Vec<Polynomial> {
     let mut c = gcd(&f, &f.clone().diff());
     f = f.div(&c).0;
-    let mut z: Vec<(Polynomial, u32)> = vec![];
+    let mut z: Vec<Polynomial> = vec![];
     let mut e: u32 = 1;
 
     let one_element = Polynomial::new(vec![FieldElement::new(
@@ -26,7 +28,7 @@ pub fn sff(mut f: Polynomial) -> Vec<(Polynomial, u32)> {
     while f != one_element {
         let y = gcd(&f, &c);
         if f != y {
-            z.push(((f.div(&y).0), e));
+            z.push(f.div(&y).0);
         }
 
         f = y.clone();
@@ -36,8 +38,8 @@ pub fn sff(mut f: Polynomial) -> Vec<(Polynomial, u32)> {
 
     if c != one_element {
         let r = sff(c.sqrt());
-        for (f_star, e_star) in r {
-            z.push((f_star, 2 * e_star));
+        for f_star in r {
+            z.push(f_star);
         }
     }
 
@@ -74,17 +76,19 @@ mod tests {
         ]);
         let poly_f = Polynomial::from_c_array(&json_f);
 
-        let factors = sff(poly_f);
+        let mut factors = sff(poly_f);
+        factors.sort();
+
         let mut result: Vec<Factors> = vec![];
 
-        for (factor, exponent) in factors {
+        for (exponent, factor) in factors.iter().enumerate() {
             result.push(Factors {
-                factor: factor.to_c_array(),
-                exponent,
+                factor: factor.clone().to_c_array(),
+                exponent: exponent + 1,
             });
         }
 
-        println!("{:?}", result.sort());
+        println!("{:?}", result);
         let bit_indices: Vec<u8> = vec![0];
         assert!(false)
     }
