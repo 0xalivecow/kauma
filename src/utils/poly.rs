@@ -295,9 +295,17 @@ impl Polynomial {
 
     pub fn diff(mut self) -> Self {
         // Pop first element
-        self.polynomial.remove(0);
+        // Check if the polynomial is 1 or less. In this case, output would be [] without check
+        // Output should be [0; 16] however
+        if self.polynomial.len() > 1 {
+            self.polynomial.remove(0);
+        } else {
+            return Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+        }
 
         for (position, element) in self.polynomial.iter_mut().enumerate() {
+            // Set all uneven degrees to 0, as they were the even degrees before
+            // As we are in GF128, this means they become 0 after mul with even number
             if position % 2 == 1 {
                 *element = FieldElement::new(vec![0; 16]);
             }
@@ -1199,6 +1207,18 @@ mod tests {
             "AAAAAAAAAAAAAAAAAAAAAA==",
             "UnderstaaaaaaaaaaaaanQ=="
         ]);
+        let element1: Polynomial = Polynomial::from_c_array(&json1);
+        eprintln!("Starting poly sqrt");
+
+        let result = element1.diff();
+
+        assert_eq!(json!(result.to_c_array()), expected);
+    }
+
+    #[test]
+    fn test_poly_diff_len1() {
+        let json1 = json!(["IJustWannaTellYouAAAAA==",]);
+        let expected = json!(["AAAAAAAAAAAAAAAAAAAAAA==",]);
         let element1: Polynomial = Polynomial::from_c_array(&json1);
         eprintln!("Starting poly sqrt");
 
