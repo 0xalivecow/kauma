@@ -12,7 +12,7 @@ use serde_json::Value;
 
 use super::field::FieldElement;
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Polynomial {
     polynomial: Vec<FieldElement>,
 }
@@ -20,6 +20,10 @@ pub struct Polynomial {
 impl Polynomial {
     pub const fn new(polynomial: Vec<FieldElement>) -> Self {
         Self { polynomial }
+    }
+
+    pub fn degree(&self) -> usize {
+        self.polynomial.len()
     }
 
     pub fn from_c_array(array: &Value) -> Self {
@@ -178,13 +182,16 @@ impl Polynomial {
     }
 
     // Returns (quotient, remainder)
-    pub fn div(self, rhs: &Self) -> (Self, Self) {
+    pub fn div(&self, rhs: &Self) -> (Self, Self) {
         // Div by zero check ommitted since data is guaranteed to be non 0
 
         eprintln!("{:?}, {:?}", self.polynomial.len(), rhs.polynomial.len());
 
         if self.polynomial.len() < rhs.polynomial.len() {
-            return (Polynomial::new(vec![FieldElement::new(vec![0; 16])]), self);
+            return (
+                Polynomial::new(vec![FieldElement::new(vec![0; 16])]),
+                self.clone(),
+            );
         }
 
         let mut remainder = self.clone();
@@ -483,12 +490,13 @@ impl Ord for Polynomial {
     }
 }
 
-pub fn gcd(a: Polynomial, b: Polynomial) -> Polynomial {
+pub fn gcd(a: &Polynomial, b: &Polynomial) -> Polynomial {
     if a.is_zero() {
-        return b;
+        return b.clone();
     }
 
-    return gcd(b.div(&a).1.monic(), a);
+    let monic_b = b.div(&a).1.monic();
+    return gcd(&monic_b, a);
 }
 
 pub fn sort_polynomial_array(mut polys: Vec<Polynomial>) -> Result<Vec<Polynomial>> {
@@ -1300,7 +1308,7 @@ mod tests {
         let a: Polynomial = Polynomial::from_c_array(&a);
         let b: Polynomial = Polynomial::from_c_array(&b);
 
-        let result = gcd(a.monic(), b.monic());
+        let result = gcd(&a.monic(), &b.monic());
 
         assert_eq!(json!(result.to_c_array()), expected);
     }
@@ -1314,7 +1322,7 @@ mod tests {
         let a: Polynomial = Polynomial::from_c_array(&a);
         let b: Polynomial = Polynomial::from_c_array(&b);
 
-        let result = gcd(a.monic(), b.monic());
+        let result = gcd(&a.monic(), &b.monic());
 
         assert_eq!(json!(result.to_c_array()), expected);
     }

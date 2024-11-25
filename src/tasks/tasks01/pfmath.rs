@@ -5,6 +5,7 @@ use serde_json::Value;
 use crate::utils::{
     field::FieldElement,
     poly::{gcd, Polynomial},
+    sff::{sff, Factors},
 };
 
 pub fn gfpoly_add(args: &Value) -> Result<Polynomial> {
@@ -112,7 +113,24 @@ pub fn gfpoly_gcd(args: &Value) -> Result<Polynomial> {
     let poly_a = Polynomial::from_c_array(&args["A"].clone());
     let poly_b = Polynomial::from_c_array(&args["B"].clone());
 
-    let result = gcd(poly_a.monic(), poly_b.monic());
+    let result = gcd(&poly_a.monic(), &poly_b.monic());
+
+    Ok(result)
+}
+
+pub fn gfpoly_factor_sff(arsg: &Value) -> Result<Vec<(Factors)>> {
+    let poly_f = Polynomial::from_c_array(&arsg["F"].clone());
+
+    let mut factors = sff(poly_f);
+    factors.sort();
+    let mut result: Vec<Factors> = vec![];
+
+    for (factor, exponent) in factors {
+        result.push(Factors {
+            factor: factor.to_c_array(),
+            exponent,
+        });
+    }
 
     Ok(result)
 }
