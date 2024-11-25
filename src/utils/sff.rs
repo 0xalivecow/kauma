@@ -8,9 +8,9 @@ use crate::utils::{
 use super::poly::Polynomial;
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Factors {
-    factor: Vec<String>,
-    exponent: u32,
+pub struct Factors {
+    pub factor: Vec<String>,
+    pub exponent: u32,
 }
 
 pub fn sff(mut f: Polynomial) -> Vec<(Polynomial, u32)> {

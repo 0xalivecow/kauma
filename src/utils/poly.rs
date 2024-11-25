@@ -22,6 +22,10 @@ impl Polynomial {
         Self { polynomial }
     }
 
+    pub fn degree(&self) -> usize {
+        self.polynomial.len()
+    }
+
     pub fn from_c_array(array: &Value) -> Self {
         let mut polynomial: Vec<FieldElement> = vec![];
         let c_array: Vec<String> = array

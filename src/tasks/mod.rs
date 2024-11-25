@@ -9,8 +9,8 @@ use tasks01::{
     gfmul::gfmul_task,
     pad_oracle::padding_oracle,
     pfmath::{
-        gfdiv, gfpoly_add, gfpoly_diff, gfpoly_divmod, gfpoly_gcd, gfpoly_make_monic, gfpoly_mul,
-        gfpoly_pow, gfpoly_powmod, gfpoly_sort, gfpoly_sqrt,
+        gfdiv, gfpoly_add, gfpoly_diff, gfpoly_divmod, gfpoly_factor_sff, gfpoly_gcd,
+        gfpoly_make_monic, gfpoly_mul, gfpoly_pow, gfpoly_powmod, gfpoly_sort, gfpoly_sqrt,
     },
     poly2block::poly2block,
     sea128::sea128,
@@ -154,6 +154,12 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
         "gfpoly_gcd" => {
             let result = gfpoly_gcd(args)?;
             let json = json!({"G" : result.to_c_array()});
+
+            Ok(json)
+        }
+        "gfpoly_factor_sff" => {
+            let result = gfpoly_factor_sff(args)?;
+            let json = json!({"factors" : result});
 
             Ok(json)
         }
