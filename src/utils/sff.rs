@@ -10,14 +10,14 @@ use super::poly::Polynomial;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Factors {
     pub factor: Vec<String>,
-    pub exponent: u32,
+    pub exponent: u128,
 }
 
-pub fn sff(mut f: Polynomial) -> Vec<(Polynomial, u32)> {
+pub fn sff(mut f: Polynomial) -> Vec<(Polynomial, u128)> {
     let mut c = gcd(&f, &f.clone().diff());
     f = f.div(&c).0;
-    let mut z: Vec<(Polynomial, u32)> = vec![];
-    let mut e: u32 = 1;
+    let mut z: Vec<(Polynomial, u128)> = vec![];
+    let mut e: u128 = 1;
 
     let one_element = Polynomial::new(vec![FieldElement::new(
         polynomial_2_block(vec![0], "gcm").unwrap(),

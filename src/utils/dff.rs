@@ -11,29 +11,28 @@ pub struct Factors {
     pub degree: u32,
 }
 
-pub fn ddf(f: Polynomial) -> Vec<(Polynomial, usize)> {
+pub fn ddf(f: Polynomial) -> Vec<(Polynomial, u128)> {
     let q = BigUint::pow(&BigUint::from_u8(2).unwrap(), 128);
     eprintln!("q: {:?}", q);
 
-    let mut z: Vec<(Polynomial, usize)> = vec![];
-    let mut d: u32 = 1;
+    let mut z: Vec<(Polynomial, u128)> = vec![];
+    let mut d: u128 = 1;
     let mut f_star = f.clone();
 
     let one_cmp = Polynomial::one();
     while f_star.degree() >= (2 * d) as usize {
-        let h = Polynomial::x().bpow_mod(q.clone().pow(d), f_star.clone())
-            + Polynomial::x().div(&f_star).1;
+        let h = Polynomial::x().bpow_mod(q.clone().pow(d), f_star.clone()) + Polynomial::x();
 
         let g = gcd(&h, &f_star);
         if g != one_cmp {
-            z.push((g.clone(), d as usize));
+            z.push((g.clone(), d));
             f_star = f_star.div(&g).0;
         }
 
         d += 1;
     }
     if f_star != one_cmp {
-        z.push((f_star.clone(), f_star.degree()));
+        z.push((f_star.clone(), f_star.degree() as u128));
     } else if z.len() == 0 {
         z.push((f.clone(), 1));
     }
