@@ -1,5 +1,7 @@
 use crate::utils::field::ByteArray;
+use base64::alphabet::BIN_HEX;
 use base64::prelude::*;
+use num::{BigInt, BigUint, One, Zero};
 use std::{str::FromStr, u128, u8, usize};
 
 use std::{
@@ -24,6 +26,23 @@ impl Polynomial {
 
     pub fn degree(&self) -> usize {
         self.polynomial.len()
+    }
+
+    pub fn one() -> Self {
+        Polynomial::new(vec![FieldElement::new(
+            polynomial_2_block(vec![0], "gcm").unwrap(),
+        )])
+    }
+
+    pub fn x() -> Self {
+        Polynomial::new(vec![
+            FieldElement::new(vec![0; 16]),
+            FieldElement::new(polynomial_2_block(vec![0], "gcm").unwrap()),
+        ])
+    }
+
+    pub fn zero() -> Self {
+        Polynomial::new(vec![FieldElement::new(vec![0; 16])])
     }
 
     pub fn from_c_array(array: &Value) -> Self {
@@ -122,6 +141,64 @@ impl Polynomial {
         result
     }
 
+    pub fn bpow_mod(mut self, mut exponent: BigUint, modulus: Polynomial) -> Polynomial {
+        let mut result: Polynomial = Polynomial::new(vec![FieldElement::new(
+            polynomial_2_block(vec![0], "gcm").unwrap(),
+        )]);
+
+        if exponent == BigUint::one() {
+            eprintln!("special case 1: {:02X?}", self.clone().div(&modulus).1);
+
+            return self.div(&modulus).1;
+        }
+
+        if exponent == BigUint::zero() {
+            let result = Polynomial::new(vec![FieldElement::new(
+                polynomial_2_block(vec![0], "gcm").unwrap(),
+            )]);
+
+            eprintln!("Returned value is: {:02X?}", result);
+            return result;
+        }
+
+        //eprintln!("Initial result: {:?}", result);
+        while &exponent > &BigUint::zero() {
+            //eprintln!("Current exponent: {:02X}", exponent);
+            if &exponent & BigUint::one() == BigUint::one() {
+                let temp = &self * &result;
+                //eprintln!("After multiplication: {:?}", temp);
+                result = temp.div(&modulus).1;
+                //eprintln!("After mod: {:?}", result);
+            }
+            let temp_square = &self * &self;
+            //eprintln!("After squaring: {:?}", temp_square);
+            self = temp_square.div(&modulus).1;
+            //eprintln!("After mod: {:?}", self);
+            exponent >>= 1;
+        }
+
+        eprintln!("result in powmod before reduction: {:02X?}", result);
+
+        while !result.polynomial.is_empty()
+            && result
+                .polynomial
+                .last()
+                .unwrap()
+                .as_ref()
+                .iter()
+                .all(|&x| x == 0)
+        {
+            result.polynomial.pop();
+        }
+
+        eprintln!("result in powmod after reduction: {:02X?}", result);
+
+        if result.is_empty() {
+            result = Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+        }
+
+        result
+    }
     pub fn pow_mod(mut self, mut exponent: u128, modulus: Polynomial) -> Polynomial {
         let mut result: Polynomial = Polynomial::new(vec![FieldElement::new(
             polynomial_2_block(vec![0], "gcm").unwrap(),

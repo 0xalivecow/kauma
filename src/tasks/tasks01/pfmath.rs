@@ -1,11 +1,18 @@
+use std::usize;
+
 use anyhow::Result;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use serde_json::Value;
 
-use crate::utils::{
-    field::FieldElement,
-    poly::{gcd, Polynomial},
-    sff::{sff, Factors},
+use crate::{
+    tasks,
+    utils::{
+        self,
+        dff::ddf,
+        field::FieldElement,
+        poly::{gcd, Polynomial},
+        sff::{sff, Factors},
+    },
 };
 
 pub fn gfpoly_add(args: &Value) -> Result<Polynomial> {
@@ -129,6 +136,23 @@ pub fn gfpoly_factor_sff(arsg: &Value) -> Result<Vec<(Factors)>> {
         result.push(Factors {
             factor: factor.to_c_array(),
             exponent,
+        });
+    }
+
+    Ok(result)
+}
+
+pub fn gfpoly_factor_ddf(arsg: &Value) -> Result<Vec<(utils::dff::Factors)>> {
+    let poly_f = Polynomial::from_c_array(&arsg["F"].clone());
+
+    let mut factors = ddf(poly_f);
+    factors.sort();
+    let mut result: Vec<utils::dff::Factors> = vec![];
+
+    for (factor, degree) in factors {
+        result.push(utils::dff::Factors {
+            factor: factor.to_c_array(),
+            degree: degree as u32,
         });
     }
 
