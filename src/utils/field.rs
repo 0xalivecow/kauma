@@ -180,10 +180,7 @@ impl BitXor for FieldElement {
 impl Div for FieldElement {
     type Output = Self;
     fn div(self, rhs: Self) -> Self::Output {
-        eprintln!("RHS in div{:02X?}", &rhs);
-
         let inverse = rhs.inv();
-        eprintln!("Inverse in div{:02X?}", inverse);
         self.clone() * inverse
     }
 }
@@ -202,15 +199,11 @@ impl Div for &FieldElement {
 impl PartialOrd for FieldElement {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         for (byte_a, byte_b) in self.as_ref().iter().rev().zip(other.as_ref().iter().rev()) {
-            eprintln!("Field Partial Ord Bytes: {:02X} {:02X}", byte_a, byte_b);
             if byte_a > byte_b {
-                eprintln!("Bytes were greater");
                 return Some(Ordering::Greater);
             } else if byte_a < byte_b {
-                eprintln!("Bytes were less");
                 return Some(Ordering::Less);
             } else {
-                eprintln!("Bytes were equal");
                 continue;
             }
         }
@@ -231,15 +224,11 @@ impl Eq for FieldElement {
 impl Ord for FieldElement {
     fn cmp(&self, other: &Self) -> Ordering {
         for (byte_a, byte_b) in self.as_ref().iter().rev().zip(other.as_ref().iter().rev()) {
-            eprintln!("Field Ord Bytes: {:02X} {:02X}", byte_a, byte_b);
             if byte_a > byte_b {
-                eprintln!("Bytes were greater");
                 return Ordering::Greater;
             } else if byte_a < byte_b {
-                eprintln!("Bytes were less");
                 return Ordering::Less;
             } else {
-                eprintln!("Bytes were equal");
                 continue;
             }
         }

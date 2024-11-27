@@ -177,8 +177,6 @@ impl Polynomial {
             exponent >>= 1;
         }
 
-        eprintln!("result in powmod before reduction: {:02X?}", result);
-
         while !result.polynomial.is_empty()
             && result
                 .polynomial
@@ -190,8 +188,6 @@ impl Polynomial {
         {
             result.polynomial.pop();
         }
-
-        eprintln!("result in powmod after reduction: {:02X?}", result);
 
         if result.is_empty() {
             result = Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
@@ -262,7 +258,7 @@ impl Polynomial {
     pub fn div(&self, rhs: &Self) -> (Self, Self) {
         // Div by zero check ommitted since data is guaranteed to be non 0
 
-        eprintln!("{:?}, {:?}", self.polynomial.len(), rhs.polynomial.len());
+        //eprintln!("{:?}, {:?}", self.polynomial.len(), rhs.polynomial.len());
 
         if self.polynomial.len() < rhs.polynomial.len() {
             return (
