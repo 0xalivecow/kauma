@@ -39,6 +39,8 @@ pub fn ddf(f: Polynomial) -> Vec<(Polynomial, u128)> {
     if f_star != one_cmp {
         eprintln!("fstar not one");
         z.push((f_star.clone(), f_star.degree() as u128));
+    } else if z.len() == 0 {
+        z.push((f.clone(), 1));
     }
 
     z
