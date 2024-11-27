@@ -25,7 +25,7 @@ impl Polynomial {
     }
 
     pub fn degree(&self) -> usize {
-        self.polynomial.len()
+        self.polynomial.len() - 1
     }
 
     pub fn one() -> Self {
