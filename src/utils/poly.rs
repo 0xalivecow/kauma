@@ -576,9 +576,21 @@ pub fn gcd(a: &Polynomial, b: &Polynomial) -> Polynomial {
     if a.is_zero() {
         return b.clone();
     }
+    if b.is_zero() {
+        return a.clone();
+    }
 
-    let monic_b = b.div(&a).1.monic();
-    return gcd(&monic_b, a);
+    if a.degree() > b.degree() {
+        return gcd(b, a);
+    }
+
+    let (_, remainder) = b.div(a);
+
+    if remainder.is_zero() {
+        return a.clone().monic();
+    }
+
+    gcd(&remainder, a)
 }
 
 pub fn non_monic_gcd(a: &Polynomial, b: &Polynomial) -> Polynomial {
