@@ -9,6 +9,7 @@ use crate::{
     utils::{
         self,
         dff::ddf,
+        edf::edf,
         field::FieldElement,
         poly::{gcd, Polynomial},
         sff::{sff, Factors},
@@ -154,6 +155,23 @@ pub fn gfpoly_factor_ddf(arsg: &Value) -> Result<Vec<(utils::dff::Factors)>> {
             factor: factor.to_c_array(),
             degree: degree as u32,
         });
+    }
+
+    Ok(result)
+}
+
+pub fn gfpoly_factor_edf(arsg: &Value) -> Result<Vec<Vec<String>>> {
+    let poly_f = Polynomial::from_c_array(&arsg["F"].clone());
+    let d: u32 = serde_json::from_value(arsg["d"].clone())?;
+
+    let mut factors = edf(poly_f, d);
+
+    factors.sort();
+
+    let mut result: Vec<Vec<String>> = vec![];
+
+    for factor in factors {
+        result.push(factor.to_c_array())
     }
 
     Ok(result)
