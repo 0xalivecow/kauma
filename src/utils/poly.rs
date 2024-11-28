@@ -41,6 +41,15 @@ impl Polynomial {
         ])
     }
 
+    pub fn rand(rng_cap: &usize) -> Self {
+        let mut rand_poly: Vec<FieldElement> = Vec::with_capacity(rng_cap.to_owned());
+        for _i in 0..rng_cap.to_owned() {
+            rand_poly.push(FieldElement::rand());
+        }
+
+        Polynomial::new(rand_poly)
+    }
+
     pub fn zero() -> Self {
         Polynomial::new(vec![FieldElement::new(vec![0; 16])])
     }
@@ -141,7 +150,7 @@ impl Polynomial {
         result
     }
 
-    pub fn bpow_mod(mut self, mut exponent: BigUint, modulus: Polynomial) -> Polynomial {
+    pub fn bpow_mod(mut self, mut exponent: BigUint, modulus: &Polynomial) -> Polynomial {
         let mut result: Polynomial = Polynomial::new(vec![FieldElement::new(
             polynomial_2_block(vec![0], "gcm").unwrap(),
         )]);
@@ -570,6 +579,15 @@ pub fn gcd(a: &Polynomial, b: &Polynomial) -> Polynomial {
 
     let monic_b = b.div(&a).1.monic();
     return gcd(&monic_b, a);
+}
+
+pub fn non_monic_gcd(a: &Polynomial, b: &Polynomial) -> Polynomial {
+    if a.is_zero() {
+        return b.clone();
+    }
+
+    let b = b.div(&a).1;
+    return non_monic_gcd(&b, a);
 }
 
 pub fn sort_polynomial_array(mut polys: Vec<Polynomial>) -> Result<Vec<Polynomial>> {
