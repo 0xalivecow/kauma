@@ -1,4 +1,5 @@
 use base64::prelude::*;
+use rand::{random, Rng, RngCore};
 use std::{u128, u8, usize};
 
 use std::{
@@ -23,6 +24,11 @@ impl FieldElement {
     pub const IRREDUCIBLE_POLYNOMIAL: [u8; 17] = [
         87, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01,
     ];
+
+    pub fn rand() -> Self {
+        let rand_field: [u8; 16] = rand::random();
+        FieldElement::new(rand_field.to_vec())
+    }
 
     pub fn zero(self) -> Self {
         FieldElement::new(vec![0])
