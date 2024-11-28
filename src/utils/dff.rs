@@ -21,7 +21,7 @@ pub fn ddf(f: Polynomial) -> Vec<(Polynomial, u128)> {
     let one_cmp = Polynomial::one();
 
     while f_star.degree() as u128 >= (2 * d) {
-        let h = Polynomial::x().bpow_mod(q.clone().pow(d), f_star.clone()) + Polynomial::x();
+        let h = Polynomial::x().bpow_mod(q.clone().pow(d), &f_star.clone()) + Polynomial::x();
 
         let g = gcd(&h, &f_star);
         if g != one_cmp {
