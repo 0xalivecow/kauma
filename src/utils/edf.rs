@@ -1,8 +1,6 @@
-use base64::{prelude::BASE64_STANDARD, Engine};
-use num::{BigUint, FromPrimitive, Integer, One};
+use num::{BigUint, FromPrimitive, One};
 use rand::Rng;
 
-use crate::utils::{field::FieldElement, poly::non_monic_gcd};
 
 use super::poly::{gcd, Polynomial};
 

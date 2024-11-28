@@ -1,6 +1,6 @@
 use std::usize;
 
-use num::{cast::AsPrimitive, pow::Pow, traits::ToBytes, BigUint, FromPrimitive};
+use num::{pow::Pow, BigUint, FromPrimitive};
 use serde::{Deserialize, Serialize};
 
 use super::poly::{gcd, Polynomial};

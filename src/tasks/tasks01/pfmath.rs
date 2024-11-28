@@ -1,20 +1,16 @@
-use std::usize;
 
 use anyhow::Result;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use serde_json::Value;
 
-use crate::{
-    tasks,
-    utils::{
+use crate::utils::{
         self,
         dff::ddf,
         edf::edf,
         field::FieldElement,
         poly::{gcd, Polynomial},
         sff::{sff, Factors},
-    },
-};
+    };
 
 pub fn gfpoly_add(args: &Value) -> Result<Polynomial> {
     let poly_a = Polynomial::from_c_array(&args["A"].clone());
@@ -126,7 +122,7 @@ pub fn gfpoly_gcd(args: &Value) -> Result<Polynomial> {
     Ok(result)
 }
 
-pub fn gfpoly_factor_sff(arsg: &Value) -> Result<Vec<(Factors)>> {
+pub fn gfpoly_factor_sff(arsg: &Value) -> Result<Vec<Factors>> {
     let poly_f = Polynomial::from_c_array(&arsg["F"].clone());
 
     let mut factors = sff(poly_f);
@@ -143,7 +139,7 @@ pub fn gfpoly_factor_sff(arsg: &Value) -> Result<Vec<(Factors)>> {
     Ok(result)
 }
 
-pub fn gfpoly_factor_ddf(arsg: &Value) -> Result<Vec<(utils::dff::Factors)>> {
+pub fn gfpoly_factor_ddf(arsg: &Value) -> Result<Vec<utils::dff::Factors>> {
     let poly_f = Polynomial::from_c_array(&arsg["F"].clone());
 
     let mut factors = ddf(poly_f);
