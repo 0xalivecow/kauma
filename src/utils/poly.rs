@@ -1,8 +1,9 @@
 use crate::utils::field::ByteArray;
-use base64::alphabet::BIN_HEX;
 use base64::prelude::*;
+
 use num::traits::FromBytes;
 use num::{BigInt, BigUint, One, Zero};
+
 use std::{str::FromStr, u128, u8, usize};
 
 use std::{
