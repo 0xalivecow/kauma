@@ -32,15 +32,13 @@ impl Polynomial {
     }
 
     pub fn one() -> Self {
-        Polynomial::new(vec![FieldElement::new(
-            polynomial_2_block(vec![0], "gcm").unwrap(),
-        )])
+        Polynomial::new(vec![FieldElement::one()])
     }
 
     pub fn x() -> Self {
         Polynomial::new(vec![
             FieldElement::new(vec![0; 16]),
-            FieldElement::new(polynomial_2_block(vec![0], "gcm").unwrap()),
+            FieldElement::new(polynomial_2_block(vec![0], "xex").unwrap()),
         ])
     }
 
@@ -54,7 +52,7 @@ impl Polynomial {
     }
 
     pub fn zero() -> Self {
-        Polynomial::new(vec![FieldElement::new(vec![0; 16])])
+        Polynomial::new(vec![FieldElement::zero()])
     }
 
     pub fn from_c_array(array: &Value) -> Self {
@@ -85,7 +83,7 @@ impl Polynomial {
     pub fn to_c_array(self) -> Vec<String> {
         let mut output: Vec<String> = vec![];
         for coeff in self.polynomial {
-            output.push(BASE64_STANDARD.encode(coeff));
+            output.push(coeff.to_b64());
         }
 
         output
@@ -219,9 +217,7 @@ impl Polynomial {
         }
 
         if exponent == 0 {
-            let result = Polynomial::new(vec![FieldElement::new(
-                polynomial_2_block(vec![0], "gcm").unwrap(),
-            )]);
+            let result = Polynomial::new(vec![FieldElement::one()]);
 
             eprintln!("Returned value is: {:02X?}", result);
             return result;
@@ -273,10 +269,7 @@ impl Polynomial {
         //eprintln!("{:?}, {:?}", self.polynomial.len(), rhs.polynomial.len());
 
         if self.polynomial.len() < rhs.polynomial.len() {
-            return (
-                Polynomial::new(vec![FieldElement::new(vec![0; 16])]),
-                self.clone(),
-            );
+            return (Polynomial::new(vec![FieldElement::zero()]), self.clone());
         }
 
         let mut remainder = self.clone();
@@ -285,16 +278,10 @@ impl Polynomial {
         let divisor_deg = divisor.polynomial.len() - 1;
 
         if dividend_deg < divisor_deg {
-            return (
-                Polynomial::new(vec![FieldElement::new(
-                    polynomial_2_block(vec![0; 16], "gcm").unwrap(),
-                )]),
-                remainder,
-            );
+            return (Polynomial::new(vec![FieldElement::zero()]), remainder);
         }
 
-        let mut quotient_coeffs =
-            vec![FieldElement::new(vec![0; 16]); dividend_deg - divisor_deg + 1];
+        let mut quotient_coeffs = vec![FieldElement::zero(); dividend_deg - divisor_deg + 1];
 
         while remainder.polynomial.len() >= divisor.polynomial.len() {
             let deg_diff = remainder.polynomial.len() - divisor.polynomial.len();
@@ -305,7 +292,7 @@ impl Polynomial {
 
             quotient_coeffs[deg_diff] = quot_coeff.clone();
 
-            let mut subtrahend = vec![FieldElement::new(vec![0; 16]); deg_diff];
+            let mut subtrahend = vec![FieldElement::zero(); deg_diff];
             subtrahend.extend(
                 divisor
                     .polynomial
@@ -330,7 +317,7 @@ impl Polynomial {
         }
 
         if remainder.is_empty() {
-            remainder = Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+            remainder = Polynomial::new(vec![FieldElement::zero()]);
         }
         (Polynomial::new(quotient_coeffs), remainder)
     }
@@ -431,10 +418,10 @@ impl Mul for Polynomial {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self::Output {
         if self.is_zero() || rhs.is_zero() {
-            return Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+            return Polynomial::zero();
         }
         let mut polynomial: Vec<FieldElement> =
-            vec![FieldElement::new(vec![0; 16]); self.polynomial.len() + rhs.polynomial.len() - 1];
+            vec![FieldElement::zero(); self.polynomial.len() + rhs.polynomial.len() - 1];
         for i in 0..self.polynomial.len() {
             for j in 0..rhs.polynomial.len() {
                 polynomial[i + j] = &polynomial[i + j]
@@ -449,10 +436,10 @@ impl Mul for &Polynomial {
     type Output = Polynomial;
     fn mul(self, rhs: Self) -> Self::Output {
         if self.is_zero() || rhs.is_zero() {
-            return Polynomial::new(vec![FieldElement::new(vec![0])]);
+            return Polynomial::zero();
         }
         let mut polynomial: Vec<FieldElement> =
-            vec![FieldElement::new(vec![0; 16]); self.polynomial.len() + rhs.polynomial.len() - 1];
+            vec![FieldElement::zero(); self.polynomial.len() + rhs.polynomial.len() - 1];
         for i in 0..self.polynomial.len() {
             for j in 0..rhs.polynomial.len() {
                 polynomial[i + j] = &polynomial[i + j]
@@ -486,7 +473,7 @@ impl Add for Polynomial {
         }
 
         if polynomial.is_empty() {
-            return Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+            return Polynomial::new(vec![FieldElement::zero()]);
         }
 
         Polynomial::new(polynomial)
@@ -535,8 +522,8 @@ impl PartialOrd for Polynomial {
                     );
 
                     match field_a
-                        .reverse_bits()
-                        .partial_cmp(&field_b.reverse_bits())
+                        //.reverse_bits()
+                        .partial_cmp(&field_b)
                         .unwrap()
                     {
                         Ordering::Equal => continue,
@@ -559,7 +546,10 @@ impl Ord for Polynomial {
                 for (field_a, field_b) in
                     self.as_ref().iter().rev().zip(other.as_ref().iter().rev())
                 {
-                    match field_a.reverse_bits().cmp(&field_b.reverse_bits()) {
+                    match field_a
+                        //.reverse_bits()
+                        .cmp(&field_b)
+                    {
                         Ordering::Equal => continue,
                         other => return other,
                     }
@@ -1134,19 +1124,6 @@ mod tests {
 
         assert_eq!(result.to_c_array(), vec!["gAAAAAAAAAAAAAAAAAAAAA=="]);
         //assert_eq!(BASE64_STANDARD.encode(product), "MoAAAAAAAAAAAAAAAAAAAA==");
-    }
-
-    #[test]
-    fn test_poly_div_01() {
-        let element1 =
-            FieldElement::new(BASE64_STANDARD.decode("JAAAAAAAAAAAAAAAAAAAAA==").unwrap());
-
-        let element2 =
-            FieldElement::new(BASE64_STANDARD.decode("wAAAAAAAAAAAAAAAAAAAAA==").unwrap());
-
-        let result = element1 / element2;
-
-        assert_eq!(BASE64_STANDARD.encode(result), "OAAAAAAAAAAAAAAAAAAAAA==");
     }
 
     #[test]

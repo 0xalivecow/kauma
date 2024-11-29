@@ -28,18 +28,24 @@ impl FieldElement {
 
     pub fn rand() -> Self {
         let rand_field: [u8; 16] = rand::random();
-        FieldElement::new(rand_field.to_vec())
+        FieldElement::new_no_convert(rand_field.to_vec())
     }
 
     pub fn zero() -> Self {
-        FieldElement::new(vec![0])
+        FieldElement::new_no_convert(vec![0; 16])
     }
 
     pub fn one() -> Self {
-        FieldElement::new(vec![0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        FieldElement::new_no_convert(vec![0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
 
-    pub const fn new(field_element: Vec<u8>) -> Self {
+    pub fn new(field_element: Vec<u8>) -> Self {
+        Self {
+            field_element: reverse_bits_in_bytevec(field_element),
+        }
+    }
+
+    pub fn new_no_convert(field_element: Vec<u8>) -> Self {
         Self { field_element }
     }
 
@@ -48,7 +54,7 @@ impl FieldElement {
     }
 
     pub fn to_b64(&self) -> String {
-        BASE64_STANDARD.encode(&self.field_element)
+        BASE64_STANDARD.encode(reverse_bits_in_bytevec(self.field_element.to_owned()))
     }
 
     pub fn pow(mut self, mut exponent: u128) -> FieldElement {
@@ -97,20 +103,20 @@ impl FieldElement {
         const INVERSER_START: u128 = 0xfffffffffffffffffffffffffffffffe;
 
         let mut inverser = INVERSER_START;
-        let mut inverse: Vec<u8> = vec![0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let mut inverse: Vec<u8> = vec![0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         //eprintln!("Inverse start {:02X?}", inverse);
 
         while inverser > 0 {
             //eprintln!("{:02X}", inverser);
             if inverser & 1 == 1 {
-                inverse = gfmul(&self.field_element, &inverse, "gcm").unwrap();
+                inverse = gfmul(&self.field_element, &inverse, "xex").unwrap();
             }
             inverser >>= 1;
-            self.field_element = gfmul(&self.field_element, &self.field_element, "gcm")
+            self.field_element = gfmul(&self.field_element, &self.field_element, "xex")
                 .expect("Error in sqrmul sqr");
         }
         //eprintln!("Inverse rhs {:?}", inverse);
-        FieldElement::new(inverse)
+        FieldElement::new_no_convert(inverse)
     }
 
     pub fn is_zero(&self) -> bool {
@@ -118,7 +124,7 @@ impl FieldElement {
     }
 
     pub fn reverse_bits(&self) -> Self {
-        FieldElement::new(reverse_bits_in_bytevec(self.field_element.clone()))
+        FieldElement::new_no_convert(reverse_bits_in_bytevec(self.field_element.clone()))
     }
 }
 
@@ -126,8 +132,8 @@ impl Mul for FieldElement {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        FieldElement::new(
-            gfmul(&self.field_element, &rhs.field_element, "gcm")
+        FieldElement::new_no_convert(
+            gfmul(&self.field_element, &rhs.field_element, "xex")
                 .expect("Error during multiplication"),
         )
     }
@@ -137,8 +143,8 @@ impl Mul for &FieldElement {
     type Output = FieldElement;
 
     fn mul(self, rhs: &FieldElement) -> FieldElement {
-        FieldElement::new(
-            gfmul(&self.field_element, &rhs.field_element, "gcm")
+        FieldElement::new_no_convert(
+            gfmul(&self.field_element, &rhs.field_element, "xex")
                 .expect("Error during multiplication"),
         )
     }
@@ -147,7 +153,7 @@ impl Mul for &FieldElement {
 impl Add for FieldElement {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
-        FieldElement::new(
+        FieldElement::new_no_convert(
             xor_bytes(&self.field_element, rhs.field_element).expect("Error in poly add"),
         )
     }
@@ -156,7 +162,7 @@ impl Add for FieldElement {
 impl Add for &FieldElement {
     type Output = FieldElement;
     fn add(self, rhs: Self) -> Self::Output {
-        FieldElement::new(
+        FieldElement::new_no_convert(
             xor_bytes(&self.field_element, rhs.field_element.clone()).expect("Error in poly add"),
         )
     }
@@ -185,7 +191,7 @@ impl BitXor for FieldElement {
             .zip(rhs.field_element.iter())
             .map(|(&x1, &x2)| x1 ^ x2)
             .collect();
-        FieldElement::new(result)
+        FieldElement::new_no_convert(result)
     }
 }
 
@@ -450,7 +456,7 @@ mod tests {
             FieldElement::new(BASE64_STANDARD.decode("KryptoanalyseAAAAAAAAA==").unwrap());
         let sum = element2 + element1;
 
-        assert_eq!(BASE64_STANDARD.encode(sum), "H1d3GuyA9/0OxeYouUpAAA==");
+        assert_eq!(sum.to_b64(), "H1d3GuyA9/0OxeYouUpAAA==");
     }
 
     #[test]
@@ -461,6 +467,19 @@ mod tests {
             FieldElement::new(BASE64_STANDARD.decode("DHBWMannheimAAAAAAAAAA==").unwrap());
         let sum = element2 + element1;
 
-        assert_eq!(BASE64_STANDARD.encode(sum), "OZuIncPAGEp4tYouDownAA==");
+        assert_eq!(sum.to_b64(), "OZuIncPAGEp4tYouDownAA==");
+    }
+
+    #[test]
+    fn test_field_div_01() {
+        let element1 =
+            FieldElement::new(BASE64_STANDARD.decode("JAAAAAAAAAAAAAAAAAAAAA==").unwrap());
+
+        let element2 =
+            FieldElement::new(BASE64_STANDARD.decode("wAAAAAAAAAAAAAAAAAAAAA==").unwrap());
+
+        let result = element1 / element2;
+
+        assert_eq!(result.to_b64(), "OAAAAAAAAAAAAAAAAAAAAA==");
     }
 }
