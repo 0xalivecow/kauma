@@ -247,12 +247,7 @@ impl Polynomial {
         result
     }
 
-    // Returns (quotient, remainder)
     pub fn div(&self, rhs: &Self) -> (Self, Self) {
-        // Div by zero check ommitted since data is guaranteed to be non 0
-
-        //eprintln!("{:?}, {:?}", self.polynomial.len(), rhs.polynomial.len());
-
         if self.polynomial.len() < rhs.polynomial.len() {
             return (Polynomial::new(vec![FieldElement::zero()]), self.clone());
         }
@@ -270,24 +265,20 @@ impl Polynomial {
 
         while remainder.polynomial.len() >= divisor.polynomial.len() {
             let deg_diff = remainder.polynomial.len() - divisor.polynomial.len();
-
             let leading_dividend = remainder.polynomial.last().unwrap();
             let leading_divisor = divisor.polynomial.last().unwrap();
             let quot_coeff = leading_dividend / leading_divisor;
-
             quotient_coeffs[deg_diff] = quot_coeff.clone();
 
-            let mut subtrahend = vec![FieldElement::zero(); deg_diff];
-            subtrahend.extend(
-                divisor
-                    .polynomial
-                    .iter()
-                    .map(|x| x.clone() * quot_coeff.clone()),
-            );
-            let subtrahend_poly = Polynomial::new(subtrahend);
+            let mut pos;
+            for (i, divisor_coeff) in divisor.polynomial.iter().enumerate() {
+                pos = deg_diff + i;
+                let a: &FieldElement = &remainder.polynomial[pos];
+                let c: &FieldElement = &quot_coeff;
+                remainder.polynomial[pos] = a + &(divisor_coeff * c);
+            }
 
-            remainder = remainder + subtrahend_poly;
-
+            // Remove trailing zeros
             while !remainder.polynomial.is_empty()
                 && remainder
                     .polynomial
@@ -301,9 +292,6 @@ impl Polynomial {
             }
         }
 
-        if remainder.is_empty() {
-            remainder = Polynomial::new(vec![FieldElement::zero()]);
-        }
         (Polynomial::new(quotient_coeffs), remainder)
     }
 

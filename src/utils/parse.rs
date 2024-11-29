@@ -8,13 +8,13 @@ pub struct Testcases {
     pub testcases: HashMap<String, Testcase>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Testcase {
     pub action: String,
     pub arguments: Value,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Responses {
     pub responses: HashMap<String, Value>,
 }
