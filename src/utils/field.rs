@@ -9,6 +9,8 @@ use std::{
 
 use anyhow::{anyhow, Ok, Result};
 
+use crate::utils::poly::bgfmul;
+
 use super::poly::polynomial_2_block;
 use super::{
     math::{reverse_bits_in_bytevec, xor_bytes},
@@ -22,7 +24,7 @@ pub struct FieldElement {
 
 impl FieldElement {
     pub const IRREDUCIBLE_POLYNOMIAL: [u8; 17] = [
-        87, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 01,
+        0x87, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01,
     ];
 
     pub fn rand() -> Self {
@@ -30,8 +32,12 @@ impl FieldElement {
         FieldElement::new(rand_field.to_vec())
     }
 
-    pub fn zero(self) -> Self {
+    pub fn zero() -> Self {
         FieldElement::new(vec![0])
+    }
+
+    pub fn one() -> Self {
+        FieldElement::new(vec![0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
 
     pub const fn new(field_element: Vec<u8>) -> Self {
@@ -47,8 +53,7 @@ impl FieldElement {
     }
 
     pub fn pow(mut self, mut exponent: u128) -> FieldElement {
-        let mut result: FieldElement =
-            FieldElement::new(polynomial_2_block(vec![0], "gcm").unwrap());
+        let mut result: FieldElement = FieldElement::one();
 
         if exponent == 1 {
             eprintln!("special case 1: {:02X?}", self.clone());
@@ -57,7 +62,7 @@ impl FieldElement {
         }
 
         if exponent == 0 {
-            let result = FieldElement::new(polynomial_2_block(vec![0], "gcm").unwrap());
+            let result = FieldElement::one();
 
             eprintln!("Returned value is: {:02X?}", result);
             return result;
@@ -90,8 +95,10 @@ impl FieldElement {
     }
 
     pub fn inv(mut self) -> Self {
-        let mut inverser: u128 = 0xfffffffffffffffffffffffffffffffe;
-        let mut inverse: Vec<u8> = polynomial_2_block(vec![0], "gcm").unwrap();
+        const INVERSER_START: u128 = 0xfffffffffffffffffffffffffffffffe;
+
+        let mut inverser = INVERSER_START;
+        let mut inverse: Vec<u8> = vec![0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         //eprintln!("Inverse start {:02X?}", inverse);
 
         while inverser > 0 {
@@ -187,7 +194,7 @@ impl Div for FieldElement {
     type Output = Self;
     fn div(self, rhs: Self) -> Self::Output {
         let inverse = rhs.inv();
-        self.clone() * inverse
+        self * inverse
     }
 }
 
@@ -195,10 +202,7 @@ impl Div for &FieldElement {
     type Output = FieldElement;
 
     fn div(self, rhs: Self) -> Self::Output {
-        // First clone and invert the divisor (rhs)
-        let rhs_inv = rhs.clone().inv();
-        // Multiply original number by the inverse
-        self.clone() * rhs_inv
+        self.clone() * rhs.clone().inv()
     }
 }
 
