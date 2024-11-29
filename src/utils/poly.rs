@@ -70,8 +70,6 @@ impl Polynomial {
             })
             .collect();
 
-        eprintln!("{:?}", c_array);
-
         for coefficient in c_array {
             polynomial.push(FieldElement::new(
                 BASE64_STANDARD
@@ -97,8 +95,6 @@ impl Polynomial {
         )]);
 
         if exponent == 1 {
-            eprintln!("special case 1: {:02X?}", self.clone());
-
             return self;
         }
 
@@ -107,7 +103,6 @@ impl Polynomial {
                 polynomial_2_block(vec![0], "gcm").unwrap(),
             )]);
 
-            eprintln!("Returned value is: {:02X?}", result);
             return result;
         }
 
@@ -159,8 +154,6 @@ impl Polynomial {
         )]);
 
         if exponent == BigUint::one() {
-            eprintln!("special case 1: {:02X?}", self.clone().div(&modulus).1);
-
             return self.div(&modulus).1;
         }
 
@@ -169,7 +162,6 @@ impl Polynomial {
                 polynomial_2_block(vec![0], "gcm").unwrap(),
             )]);
 
-            eprintln!("Returned value is: {:02X?}", result);
             return result;
         }
 
@@ -213,8 +205,6 @@ impl Polynomial {
         )]);
 
         if exponent == 1 {
-            eprintln!("special case 1: {:02X?}", self.clone().div(&modulus).1);
-
             return self.div(&modulus).1;
         }
 
@@ -223,7 +213,6 @@ impl Polynomial {
                 polynomial_2_block(vec![0], "gcm").unwrap(),
             )]);
 
-            eprintln!("Returned value is: {:02X?}", result);
             return result;
         }
 
@@ -243,8 +232,6 @@ impl Polynomial {
             exponent >>= 1;
         }
 
-        eprintln!("result in powmod before reduction: {:02X?}", result);
-
         while !result.polynomial.is_empty()
             && result
                 .polynomial
@@ -256,8 +243,6 @@ impl Polynomial {
         {
             result.polynomial.pop();
         }
-
-        eprintln!("result in powmod after reduction: {:02X?}", result);
 
         if result.is_empty() {
             result = Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
@@ -528,12 +513,6 @@ impl PartialOrd for Polynomial {
                 for (field_a, field_b) in
                     self.as_ref().iter().rev().zip(other.as_ref().iter().rev())
                 {
-                    eprintln!(
-                        "Poly partord: {:02X?} {:02X?} ",
-                        self.clone().to_c_array(),
-                        other.clone().to_c_array()
-                    );
-
                     match field_a
                         .reverse_bits()
                         .partial_cmp(&field_b.reverse_bits())
@@ -616,10 +595,10 @@ pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u
     let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
     //red_poly_bytes.0.push(0x01);
 
-    let mut poly1: ByteArray = ByteArray(poly_a.to_owned());
+    let mut poly1: ByteArray = ByteArray(poly_a.to_vec());
     //poly1.0.push(0x00);
 
-    let mut poly2: ByteArray = ByteArray(poly_b.to_owned());
+    let mut poly2: ByteArray = ByteArray(poly_b.to_vec());
     //poly2.0.push(0x00);
 
     if semantic == "gcm" {
@@ -663,9 +642,9 @@ pub fn bgfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<
         0x87, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01,
     ]);
 
-    let mut poly1: BigUint = BigUint::from_le_bytes(&reverse_bits_in_bytevec(poly_a.to_owned()));
+    let mut poly1: BigUint = BigUint::from_le_bytes(poly_a);
 
-    let mut poly2: BigUint = BigUint::from_le_bytes(&reverse_bits_in_bytevec(poly_b.to_owned()));
+    let mut poly2: BigUint = BigUint::from_le_bytes(poly_b);
 
     /*
     if semantic == "gcm" {
@@ -701,7 +680,7 @@ pub fn bgfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<
         }
     */
 
-    Ok(reverse_bits_in_bytevec(result.to_bytes_le()))
+    Ok(result.to_bytes_le())
 }
 
 pub fn convert_gcm_to_xex(gcm_poly: Vec<u8>) -> Result<Vec<u8>> {
