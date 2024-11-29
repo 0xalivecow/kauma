@@ -185,16 +185,61 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
     }
 }
 
-pub fn task_distrubute(testcases: &Testcases) -> Result<Responses> {
+fn task_distribute_mt(testcases: &Testcases) -> Result<Responses> {
+    eprintln!("USING MULTITHREADED");
+    let mut responses: HashMap<String, Value> = HashMap::new();
+    let pool = threadpool::ThreadPool::default();
+    let (tx, rx) = std::sync::mpsc::channel();
+    for (key, testcase) in testcases.testcases.clone() {
+        let tx = tx.clone();
+        let testcase = testcase.clone();
+        pool.execute(move || {
+            tx.send((key, task_deploy(&testcase)))
+                .expect("could not send return value of thread to main thread")
+        });
+    }
+
+    for _ in 0..testcases.testcases.len() {
+        let result = match rx.recv_timeout(std::time::Duration::from_secs(60 * 5)) {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("! Job timed out: {e}");
+                return Err(e.into());
+            }
+        };
+        match result.1 {
+            Ok(v) => {
+                let _ = responses.insert(result.0, v);
+            }
+            Err(e) => {
+                eprintln!("! failed to solve a challenge: {e:#}");
+                continue;
+            }
+        }
+    }
+
+    Ok(Responses { responses })
+}
+
+pub fn task_distribute_st(testcases: &Testcases) -> Result<Responses> {
+    //eprintln!("USING SINGLETHREADED");
     let mut responses: HashMap<String, Value> = HashMap::new();
 
     for (id, testcase) in &testcases.testcases {
         responses.insert(id.to_owned(), task_deploy(testcase).unwrap());
     }
 
-    Ok(Responses {
-        responses: responses,
-    })
+    Ok(Responses { responses })
+}
+
+pub fn task_distribute(testcases: &Testcases) -> Result<Responses> {
+    let cpus = num_cpus::get();
+    //TODO: Deactivate MT for now
+    if cpus > 10000000000 {
+        task_distribute_mt(testcases)
+    } else {
+        task_distribute_st(testcases)
+    }
 }
 
 #[cfg(test)]
@@ -227,7 +272,7 @@ mod tests {
         let expected = json!({ "responses": { "b856d760-023d-4b00-bad2-15d2b6da22fe": {"block": "ARIAAAAAAAAAAAAAAAAAgA=="}}});
 
         assert_eq!(
-            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(task_distribute(&parsed)?).unwrap(),
             serde_json::to_value(expected).unwrap()
         );
 
@@ -251,7 +296,7 @@ mod tests {
         });
 
         assert_eq!(
-            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(task_distribute(&parsed)?).unwrap(),
             serde_json::to_value(expected).unwrap()
         );
 
@@ -266,7 +311,7 @@ mod tests {
         let expected = json!({ "responses": { "b856d760-023d-4b00-bad2-15d2b6da22fe": {"product": "hSQAAAAAAAAAAAAAAAAAAA=="}}});
 
         assert_eq!(
-            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(task_distribute(&parsed)?).unwrap(),
             serde_json::to_value(expected).unwrap()
         );
 
@@ -284,7 +329,7 @@ mod tests {
         }});
 
         assert_eq!(
-            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(task_distribute(&parsed)?).unwrap(),
             serde_json::to_value(expected).unwrap()
         );
 
@@ -304,7 +349,7 @@ mod tests {
         }}});
 
         assert_eq!(
-            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(task_distribute(&parsed)?).unwrap(),
             serde_json::to_value(expected).unwrap()
         );
 
@@ -324,7 +369,7 @@ mod tests {
         }}});
 
         assert_eq!(
-            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(task_distribute(&parsed)?).unwrap(),
             serde_json::to_value(expected).unwrap()
         );
 
@@ -342,7 +387,7 @@ mod tests {
         }}});
 
         assert_eq!(
-            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(task_distribute(&parsed)?).unwrap(),
             serde_json::to_value(expected).unwrap()
         );
 
@@ -360,7 +405,7 @@ mod tests {
         }}});
 
         assert_eq!(
-            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(task_distribute(&parsed)?).unwrap(),
             serde_json::to_value(expected).unwrap()
         );
 
@@ -378,7 +423,7 @@ mod tests {
         }}});
 
         assert_eq!(
-            serde_json::to_value(task_distrubute(&parsed)?).unwrap(),
+            serde_json::to_value(task_distribute(&parsed)?).unwrap(),
             serde_json::to_value(expected).unwrap()
         );
 

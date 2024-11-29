@@ -119,10 +119,8 @@ pub fn gcm_encrypt_aes(
     let mut counter: u32 = 1;
     nonce.append(counter.to_be_bytes().to_vec().as_mut());
     //nonce.append(0u8.to_le_bytes().to_vec().as_mut());
-    eprintln!("{:001X?}", nonce);
 
     let auth_tag_xor = aes_128_encrypt(&key, &nonce)?;
-    eprintln!("Y0 {:001X?}", auth_tag_xor);
 
     let auth_key_h = aes_128_encrypt(&key, &0u128.to_be_bytes().to_vec())?;
 
@@ -132,8 +130,6 @@ pub fn gcm_encrypt_aes(
     for chunk in plaintext_chunks {
         nonce.drain(12..);
         nonce.append(counter.to_be_bytes().to_vec().as_mut());
-
-        eprintln!("{:001X?}", nonce);
 
         let inter1 = aes_128_encrypt(&key, &nonce)?;
 
@@ -151,7 +147,6 @@ pub fn gcm_encrypt_aes(
         &ghash(auth_key_h.clone(), ad, ciphertext.clone(), l_field.clone())?,
         auth_tag_xor,
     )?;
-    eprintln!("aes auth tag: {:001X?}", &auth_tag);
 
     Ok((ciphertext, auth_tag, l_field, auth_key_h))
 }
@@ -168,7 +163,6 @@ pub fn gcm_decrypt_aes(
     let mut counter: u32 = 1;
     nonce.append(counter.to_be_bytes().to_vec().as_mut());
     //nonce.append(0u8.to_le_bytes().to_vec().as_mut());
-    eprintln!("{:001X?}", nonce);
 
     let auth_tag_xor = aes_128_encrypt(&key, &nonce)?;
 
@@ -180,8 +174,6 @@ pub fn gcm_decrypt_aes(
     for chunk in ciphertext_chunks {
         nonce.drain(12..);
         nonce.append(counter.to_be_bytes().to_vec().as_mut());
-
-        eprintln!("{:001X?}", nonce);
 
         let inter1 = aes_128_encrypt(&key, &nonce)?;
 
@@ -201,7 +193,6 @@ pub fn gcm_decrypt_aes(
     )?;
 
     let valid = auth_tag == tag;
-    eprintln!("aes auth tag: {:001X?}", auth_tag);
 
     Ok((plaintext, valid))
 }
@@ -217,7 +208,6 @@ pub fn gcm_encrypt_sea(
     let mut counter: u32 = 1;
     nonce.append(counter.to_be_bytes().to_vec().as_mut());
     //nonce.append(0u8.to_le_bytes().to_vec().as_mut());
-    eprintln!("{:001X?}", nonce);
 
     let auth_tag_xor = sea_128_encrypt(&key, &nonce)?;
 
@@ -229,8 +219,6 @@ pub fn gcm_encrypt_sea(
     for chunk in plaintext_chunks {
         nonce.drain(12..);
         nonce.append(counter.to_be_bytes().to_vec().as_mut());
-
-        eprintln!("{:001X?}", nonce);
 
         let inter1 = sea_128_encrypt(&key, &nonce)?;
 
@@ -264,7 +252,6 @@ pub fn gcm_decrypt_sea(
     let mut counter: u32 = 1;
     nonce.append(counter.to_be_bytes().to_vec().as_mut());
     //nonce.append(0u8.to_le_bytes().to_vec().as_mut());
-    eprintln!("Nonce 1: {:001X?}", nonce);
 
     let auth_tag_xor = sea_128_encrypt(&key, &nonce)?;
 
@@ -272,16 +259,10 @@ pub fn gcm_decrypt_sea(
 
     let plaintext_chunks: Vec<Vec<u8>> = ciphertext.chunks(16).map(|x| x.to_vec()).collect();
 
-    eprintln!("{:?}", plaintext_chunks);
-
     counter = 2;
     for chunk in plaintext_chunks {
-        eprintln!("Inside loop");
-
         nonce.drain(12..);
         nonce.append(counter.to_be_bytes().to_vec().as_mut());
-
-        eprintln!("Nonce 2: {:001X?}", nonce);
 
         let inter1 = sea_128_encrypt(&key, &nonce)?;
 
@@ -295,14 +276,10 @@ pub fn gcm_decrypt_sea(
     let mut c_len: Vec<u8> = ((plaintext.len() * 8) as u64).to_be_bytes().to_vec();
     l_field.append(c_len.as_mut());
 
-    eprintln!("Ciphertext: {}", BASE64_STANDARD.encode(&ciphertext));
-
     let auth_tag = xor_bytes(
         &ghash(auth_key_h.clone(), ad, ciphertext.clone(), l_field.clone())?,
         auth_tag_xor,
     )?;
-
-    eprintln!("sea dec auth tag: {}", BASE64_STANDARD.encode(&auth_tag));
 
     let valid = auth_tag == tag;
 
@@ -317,10 +294,6 @@ pub fn ghash(
 ) -> Result<Vec<u8>> {
     let output: Vec<u8> = vec![0; 16];
 
-    eprintln!("{:?}", ad.len() as u8);
-    eprintln!("{:?}", (ad.len() % 16) as u8);
-    eprintln!("{:001X?}", ad);
-
     if ad.len() % 16 != 0 || ad.is_empty() {
         ad.append(vec![0u8; 16 - (ad.len() % 16)].as_mut());
     }
@@ -329,20 +302,12 @@ pub fn ghash(
         ciphertext.append(vec![0u8; 16 - (ciphertext.len() % 16)].as_mut());
     }
 
-    eprintln!("{:001X?}", ad);
-    eprintln!("{:001X?}", ciphertext);
-
     let mut ad_chunks = ad.chunks(16);
-
-    eprintln!("Ad chunks before first next {:001X?}", ad_chunks);
 
     let inter1 = xor_bytes(&output, ad_chunks.next().unwrap().to_vec())?;
     let mut inter_loop = gfmul(&inter1, &auth_key_h, "gcm")?;
-    eprintln!("Ad chunks after first next {:001X?}", ad_chunks);
 
     for chunk in ad_chunks {
-        eprintln!("Inside ad chunk loop");
-        eprintln!("Ad chunk in loop {:001X?}", chunk);
         let inter2 = xor_bytes(&inter_loop, chunk.to_vec())?;
         inter_loop = gfmul(&inter2, &auth_key_h, "gcm")?;
     }
@@ -356,8 +321,6 @@ pub fn ghash(
 
     let inter4 = xor_bytes(&inter_loop, l_field)?;
     inter_loop = gfmul(&inter4, &auth_key_h, "gcm")?;
-
-    eprintln!("GHASH auth tag: {:001X?}", inter_loop);
 
     Ok(inter_loop)
 }

@@ -1,12 +1,9 @@
 use num::{BigUint, FromPrimitive, One};
 use rand::Rng;
 
-
 use super::poly::{gcd, Polynomial};
 
 pub fn edf(f: Polynomial, d: u32) -> Vec<Polynomial> {
-    eprintln!("Starting edf");
-
     let q = BigUint::pow(&BigUint::from_u8(2).unwrap(), 128);
     let n: u32 = (f.degree() as u32) / (d);
     let mut z: Vec<Polynomial> = vec![f.clone()];
@@ -20,7 +17,6 @@ pub fn edf(f: Polynomial, d: u32) -> Vec<Polynomial> {
         //eprintln!("h: {:02X?}", h);
 
         let exponent = (q.pow(d) - BigUint::one()) / BigUint::from_u8(3).unwrap();
-        eprintln!("q before for {:0X?}", exponent);
 
         let g = h.bpow_mod(exponent, &f) + Polynomial::one();
         //eprintln!("g before for {:0X?}", g);
@@ -32,9 +28,7 @@ pub fn edf(f: Polynomial, d: u32) -> Vec<Polynomial> {
                 //eprintln!("Inside if");
                 let j = gcd(&z[i], &g);
 
-                eprintln!("j: {:02X?}", j);
                 if j != one_cmp && j != z[i] {
-                    eprintln!("Working on Z");
                     let intemediate = z[i].div(&j).0;
                     z.remove(i);
                     z.push(j.clone());

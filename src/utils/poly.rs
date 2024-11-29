@@ -68,8 +68,6 @@ impl Polynomial {
             })
             .collect();
 
-        eprintln!("{:?}", c_array);
-
         for coefficient in c_array {
             polynomial.push(FieldElement::new(
                 BASE64_STANDARD
@@ -95,8 +93,6 @@ impl Polynomial {
         )]);
 
         if exponent == 1 {
-            eprintln!("special case 1: {:02X?}", self.clone());
-
             return self;
         }
 
@@ -105,7 +101,6 @@ impl Polynomial {
                 polynomial_2_block(vec![0], "gcm").unwrap(),
             )]);
 
-            eprintln!("Returned value is: {:02X?}", result);
             return result;
         }
 
@@ -157,8 +152,6 @@ impl Polynomial {
         )]);
 
         if exponent == BigUint::one() {
-            eprintln!("special case 1: {:02X?}", self.clone().div(&modulus).1);
-
             return self.div(&modulus).1;
         }
 
@@ -167,7 +160,6 @@ impl Polynomial {
                 polynomial_2_block(vec![0], "gcm").unwrap(),
             )]);
 
-            eprintln!("Returned value is: {:02X?}", result);
             return result;
         }
 
@@ -211,15 +203,12 @@ impl Polynomial {
         )]);
 
         if exponent == 1 {
-            eprintln!("special case 1: {:02X?}", self.clone().div(&modulus).1);
-
             return self.div(&modulus).1;
         }
 
         if exponent == 0 {
             let result = Polynomial::new(vec![FieldElement::one()]);
 
-            eprintln!("Returned value is: {:02X?}", result);
             return result;
         }
 
@@ -239,8 +228,6 @@ impl Polynomial {
             exponent >>= 1;
         }
 
-        eprintln!("result in powmod before reduction: {:02X?}", result);
-
         while !result.polynomial.is_empty()
             && result
                 .polynomial
@@ -253,8 +240,6 @@ impl Polynomial {
             result.polynomial.pop();
         }
 
-        eprintln!("result in powmod after reduction: {:02X?}", result);
-
         if result.is_empty() {
             result = Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
         }
@@ -262,12 +247,7 @@ impl Polynomial {
         result
     }
 
-    // Returns (quotient, remainder)
     pub fn div(&self, rhs: &Self) -> (Self, Self) {
-        // Div by zero check ommitted since data is guaranteed to be non 0
-
-        //eprintln!("{:?}, {:?}", self.polynomial.len(), rhs.polynomial.len());
-
         if self.polynomial.len() < rhs.polynomial.len() {
             return (Polynomial::new(vec![FieldElement::zero()]), self.clone());
         }
@@ -285,24 +265,20 @@ impl Polynomial {
 
         while remainder.polynomial.len() >= divisor.polynomial.len() {
             let deg_diff = remainder.polynomial.len() - divisor.polynomial.len();
-
             let leading_dividend = remainder.polynomial.last().unwrap();
             let leading_divisor = divisor.polynomial.last().unwrap();
             let quot_coeff = leading_dividend / leading_divisor;
-
             quotient_coeffs[deg_diff] = quot_coeff.clone();
 
-            let mut subtrahend = vec![FieldElement::zero(); deg_diff];
-            subtrahend.extend(
-                divisor
-                    .polynomial
-                    .iter()
-                    .map(|x| x.clone() * quot_coeff.clone()),
-            );
-            let subtrahend_poly = Polynomial::new(subtrahend);
+            let mut pos;
+            for (i, divisor_coeff) in divisor.polynomial.iter().enumerate() {
+                pos = deg_diff + i;
+                let a: &FieldElement = &remainder.polynomial[pos];
+                let c: &FieldElement = &quot_coeff;
+                remainder.polynomial[pos] = a + &(divisor_coeff * c);
+            }
 
-            remainder = remainder + subtrahend_poly;
-
+            // Remove trailing zeros
             while !remainder.polynomial.is_empty()
                 && remainder
                     .polynomial
@@ -316,9 +292,6 @@ impl Polynomial {
             }
         }
 
-        if remainder.is_empty() {
-            remainder = Polynomial::new(vec![FieldElement::zero()]);
-        }
         (Polynomial::new(quotient_coeffs), remainder)
     }
 
@@ -515,12 +488,6 @@ impl PartialOrd for Polynomial {
                 for (field_a, field_b) in
                     self.as_ref().iter().rev().zip(other.as_ref().iter().rev())
                 {
-                    eprintln!(
-                        "Poly partord: {:02X?} {:02X?} ",
-                        self.clone().to_c_array(),
-                        other.clone().to_c_array()
-                    );
-
                     match field_a
                         //.reverse_bits()
                         .partial_cmp(&field_b)
@@ -606,10 +573,10 @@ pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u
     let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
     //red_poly_bytes.0.push(0x01);
 
-    let mut poly1: ByteArray = ByteArray(poly_a.to_owned());
+    let mut poly1: ByteArray = ByteArray(poly_a.to_vec());
     //poly1.0.push(0x00);
 
-    let mut poly2: ByteArray = ByteArray(poly_b.to_owned());
+    let mut poly2: ByteArray = ByteArray(poly_b.to_vec());
     //poly2.0.push(0x00);
 
     if semantic == "gcm" {
@@ -653,9 +620,9 @@ pub fn bgfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<
         0x87, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01,
     ]);
 
-    let mut poly1: BigUint = BigUint::from_le_bytes(&reverse_bits_in_bytevec(poly_a.to_owned()));
+    let mut poly1: BigUint = BigUint::from_le_bytes(poly_a);
 
-    let mut poly2: BigUint = BigUint::from_le_bytes(&reverse_bits_in_bytevec(poly_b.to_owned()));
+    let mut poly2: BigUint = BigUint::from_le_bytes(poly_b);
 
     /*
     if semantic == "gcm" {
@@ -691,7 +658,7 @@ pub fn bgfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<
         }
     */
 
-    Ok(reverse_bits_in_bytevec(result.to_bytes_le()))
+    Ok(result.to_bytes_le())
 }
 
 pub fn convert_gcm_to_xex(gcm_poly: Vec<u8>) -> Result<Vec<u8>> {

@@ -61,15 +61,12 @@ impl FieldElement {
         let mut result: FieldElement = FieldElement::one();
 
         if exponent == 1 {
-            eprintln!("special case 1: {:02X?}", self.clone());
-
             return self;
         }
 
         if exponent == 0 {
             let result = FieldElement::one();
 
-            eprintln!("Returned value is: {:02X?}", result);
             return result;
         }
 
