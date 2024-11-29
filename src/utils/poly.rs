@@ -613,20 +613,20 @@ pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
 pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
     let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
-    red_poly_bytes.0.push(0x01);
+    //red_poly_bytes.0.push(0x01);
 
     let mut poly1: ByteArray = ByteArray(poly_a.to_owned());
-    poly1.0.push(0x00);
+    //poly1.0.push(0x00);
 
     let mut poly2: ByteArray = ByteArray(poly_b.to_owned());
-    poly2.0.push(0x00);
+    //poly2.0.push(0x00);
 
     if semantic == "gcm" {
         poly1.reverse_bits_in_bytevec();
         poly2.reverse_bits_in_bytevec();
     }
 
-    let mut result: ByteArray = ByteArray(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    let mut result: ByteArray = ByteArray(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
     if poly2.LSB_is_one() {
         result.xor_byte_arrays(&poly1);
@@ -634,9 +634,9 @@ pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u
     poly2.right_shift("xex")?;
 
     while !poly2.is_empty() {
-        poly1.left_shift("xex")?;
+        let carry = poly1.left_shift("xex")?;
 
-        if poly1.msb_is_one() {
+        if carry == 1 {
             poly1.xor_byte_arrays(&red_poly_bytes);
         }
 
@@ -647,7 +647,7 @@ pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u
         poly2.right_shift("xex")?;
     }
 
-    result.0.remove(16);
+    //result.0.remove(16);
 
     if semantic == "gcm" {
         result.reverse_bits_in_bytevec();
