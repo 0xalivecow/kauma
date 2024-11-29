@@ -1,6 +1,9 @@
 use crate::utils::field::ByteArray;
 use base64::prelude::*;
-use num::{BigUint, One, Zero};
+
+use num::traits::FromBytes;
+use num::{BigInt, BigUint, One, Zero};
+
 use std::{str::FromStr, u128, u8, usize};
 
 use std::{
@@ -12,6 +15,7 @@ use anyhow::{anyhow, Ok, Result};
 use serde_json::Value;
 
 use super::field::FieldElement;
+use super::math::reverse_bits_in_bytevec;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Polynomial {
@@ -290,10 +294,7 @@ impl Polynomial {
         }
 
         let mut quotient_coeffs =
-            vec![
-                FieldElement::new(polynomial_2_block(vec![0; 16], "gcm").unwrap());
-                dividend_deg - divisor_deg + 1
-            ];
+            vec![FieldElement::new(vec![0; 16]); dividend_deg - divisor_deg + 1];
 
         while remainder.polynomial.len() >= divisor.polynomial.len() {
             let deg_diff = remainder.polynomial.len() - divisor.polynomial.len();
@@ -304,8 +305,7 @@ impl Polynomial {
 
             quotient_coeffs[deg_diff] = quot_coeff.clone();
 
-            let mut subtrahend =
-                vec![FieldElement::new(polynomial_2_block(vec![0; 16], "gcm").unwrap()); deg_diff];
+            let mut subtrahend = vec![FieldElement::new(vec![0; 16]); deg_diff];
             subtrahend.extend(
                 divisor
                     .polynomial
@@ -614,20 +614,20 @@ pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
 pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
     let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
-    red_poly_bytes.0.push(0x01);
+    //red_poly_bytes.0.push(0x01);
 
     let mut poly1: ByteArray = ByteArray(poly_a.to_owned());
-    poly1.0.push(0x00);
+    //poly1.0.push(0x00);
 
     let mut poly2: ByteArray = ByteArray(poly_b.to_owned());
-    poly2.0.push(0x00);
+    //poly2.0.push(0x00);
 
     if semantic == "gcm" {
         poly1.reverse_bits_in_bytevec();
         poly2.reverse_bits_in_bytevec();
     }
 
-    let mut result: ByteArray = ByteArray(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    let mut result: ByteArray = ByteArray(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
     if poly2.LSB_is_one() {
         result.xor_byte_arrays(&poly1);
@@ -635,9 +635,9 @@ pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u
     poly2.right_shift("xex")?;
 
     while !poly2.is_empty() {
-        poly1.left_shift("xex")?;
+        let carry = poly1.left_shift("xex")?;
 
-        if poly1.msb_is_one() {
+        if carry == 1 {
             poly1.xor_byte_arrays(&red_poly_bytes);
         }
 
@@ -648,13 +648,60 @@ pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u
         poly2.right_shift("xex")?;
     }
 
-    result.0.remove(16);
+    //result.0.remove(16);
 
     if semantic == "gcm" {
         result.reverse_bits_in_bytevec();
     }
 
     Ok(result.0)
+}
+
+pub fn bgfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
+    //TODO: Implement gfmul with bigint
+    let red_poly_bytes: BigUint = BigUint::from_slice(&[
+        0x87, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01,
+    ]);
+
+    let mut poly1: BigUint = BigUint::from_le_bytes(&reverse_bits_in_bytevec(poly_a.to_owned()));
+
+    let mut poly2: BigUint = BigUint::from_le_bytes(&reverse_bits_in_bytevec(poly_b.to_owned()));
+
+    /*
+    if semantic == "gcm" {
+        poly1.re;
+        poly2.reverse_bits_in_bytevec();
+    }
+    */
+
+    let mut result: BigUint = BigUint::zero();
+
+    if (&poly2 & (BigUint::one() << 127)) == BigUint::one() {
+        result = &result ^ &poly1;
+    }
+    poly2 = &poly2 >> 1;
+
+    while &poly2 != &BigUint::zero() {
+        poly1 = &poly1 << 1;
+
+        if (&poly1 & (BigUint::one() << 127)) == BigUint::one() {
+            poly1 = &poly1 ^ &red_poly_bytes;
+        }
+
+        if &poly2 & BigUint::one() == BigUint::one() {
+            result = &result ^ &poly1;
+        }
+
+        poly2 = &poly2 >> 1;
+    }
+
+    /*
+        if semantic == "gcm" {
+            result.reverse_bits_in_bytevec();
+        }
+    */
+
+    Ok(reverse_bits_in_bytevec(result.to_bytes_le()))
 }
 
 pub fn convert_gcm_to_xex(gcm_poly: Vec<u8>) -> Result<Vec<u8>> {
@@ -794,7 +841,7 @@ pub fn coefficient_to_binary(coefficients: Vec<u8>) -> u128 {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::poly::b64_2_num;
+    use crate::utils::poly::{b64_2_num, gcd};
     use anyhow::Result;
     use serde_json::json;
     // Note this useful idiom: importing names from outer (for mod tests) scope.
@@ -1427,5 +1474,18 @@ mod tests {
         let result = gcd(&a.monic(), &b.monic());
 
         assert_eq!(json!(result.to_c_array()), expected);
+    }
+
+    #[test]
+    fn test_poly_gcd_stress() {
+        eprintln!("{:?}", Polynomial::one());
+
+        let poly1 = Polynomial::rand(&(500 as usize));
+        let poly2 = Polynomial::rand(&(500 as usize));
+
+        let result = gcd(&poly1.monic(), &poly2.monic());
+
+        eprintln!("{:02X?}", result.to_c_array());
+        assert!(true);
     }
 }
