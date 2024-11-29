@@ -105,7 +105,7 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
         }
         "gfdiv" => {
             let result = gfdiv(args)?;
-            let out = BASE64_STANDARD.encode(result);
+            let out = result.to_b64();
             let json = json!({"q" : out});
 
             Ok(json)
