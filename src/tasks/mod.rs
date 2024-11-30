@@ -234,8 +234,7 @@ pub fn task_distribute_st(testcases: &Testcases) -> Result<Responses> {
 
 pub fn task_distribute(testcases: &Testcases) -> Result<Responses> {
     let cpus = num_cpus::get();
-    //TODO: Deactivate MT for now
-    if cpus > 10000000000 {
+    if cpus > 1 {
         task_distribute_mt(testcases)
     } else {
         task_distribute_st(testcases)
