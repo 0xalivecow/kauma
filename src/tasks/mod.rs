@@ -234,7 +234,7 @@ pub fn task_distribute_st(testcases: &Testcases) -> Result<Responses> {
 
 pub fn task_distribute(testcases: &Testcases) -> Result<Responses> {
     let cpus = num_cpus::get();
-    if cpus > 1 {
+    if cpus > 1000000 {
         task_distribute_mt(testcases)
     } else {
         task_distribute_st(testcases)
