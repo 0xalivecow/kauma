@@ -4,30 +4,34 @@ use rand::Rng;
 use super::poly::{gcd, Polynomial};
 
 pub fn edf(f: Polynomial, d: u32) -> Vec<Polynomial> {
+    eprintln!("edf started: {:?}", f.clone().to_c_array());
     let q = BigUint::pow(&BigUint::from_u8(2).unwrap(), 128);
     let n: u32 = (f.degree() as u32) / (d);
     let mut z: Vec<Polynomial> = vec![f.clone()];
     let one_cmp = Polynomial::one();
 
     while (z.len() as u32) < n {
-        //eprintln!("z len {}", z.len());
-        //eprintln!("n len {}", n);
+        eprintln!("z len {}", z.len());
+        eprintln!("n len {}", n);
 
-        let h = Polynomial::rand(&rand::thread_rng().gen_range(0..f.degree()));
-        //eprintln!("h: {:02X?}", h);
+        let h = Polynomial::rand(&rand::thread_rng().gen_range(1..=f.degree()));
+        eprintln!("h: {:02X?}", h);
 
         let exponent = (q.pow(d) - BigUint::one()) / BigUint::from_u8(3).unwrap();
 
         let g = h.bpow_mod(exponent, &f) + Polynomial::one();
-        //eprintln!("g before for {:0X?}", g);
+        eprintln!("g before for {:0X?}", g);
 
-        //eprintln!("z before for {:0X?}", z);
+        eprintln!("z before for {:0X?}", z);
 
-        for i in 0..z.len() {
+        for i in (0..z.len()).rev() {
             if z[i].degree() as u32 > d {
-                //eprintln!("Inside if");
+                eprintln!("Inside if");
                 let j = gcd(&z[i], &g);
+                eprintln!("j != one_cmp {:?}", j != one_cmp);
+                eprintln!("j != z[i] {:?}", j != z[i]);
 
+                eprintln!("Inside if");
                 if j != one_cmp && j != z[i] {
                     let intemediate = z[i].div(&j).0;
                     z.remove(i);
@@ -37,9 +41,10 @@ pub fn edf(f: Polynomial, d: u32) -> Vec<Polynomial> {
             }
         }
 
-        //eprintln!("z after for {:0X?}", z);
+        eprintln!("z after for {:0X?}", z);
     }
 
+    eprintln!("edf finished");
     z
 }
 
