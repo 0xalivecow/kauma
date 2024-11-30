@@ -140,7 +140,7 @@ impl Polynomial {
         //eprintln!("result in powmod after reduction: {:02X?}", result);
 
         if result.is_empty() {
-            result = Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+            result = Polynomial::zero();
         }
 
         result
@@ -192,7 +192,7 @@ impl Polynomial {
         }
 
         if result.is_empty() {
-            result = Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+            result = Polynomial::zero();
         }
 
         result
@@ -241,7 +241,7 @@ impl Polynomial {
         }
 
         if result.is_empty() {
-            result = Polynomial::new(vec![FieldElement::new(vec![0; 16])]);
+            result = Polynomial::zero();
         }
 
         result
@@ -278,18 +278,14 @@ impl Polynomial {
                 remainder.polynomial[pos] = a + &(divisor_coeff * c);
             }
 
-            // Remove trailing zeros
-            while !remainder.polynomial.is_empty()
-                && remainder
-                    .polynomial
-                    .last()
-                    .unwrap()
-                    .as_ref()
-                    .iter()
-                    .all(|&x| x == 0)
+            while !remainder.polynomial.is_empty() && remainder.polynomial.last().unwrap().is_zero()
             {
                 remainder.polynomial.pop();
             }
+        }
+
+        if remainder.is_empty() {
+            remainder = Polynomial::zero();
         }
 
         (Polynomial::new(quotient_coeffs), remainder)
