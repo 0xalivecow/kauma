@@ -34,7 +34,10 @@ struct Message {
 
 fn parse_message(val: &Value) -> Result<(Message, Polynomial)> {
     let ciphertext_text: String = serde_json::from_value(val["ciphertext"].clone())?;
-    let ciphertext_bytes: Vec<u8> = BASE64_STANDARD.decode(ciphertext_text)?;
+    let mut ciphertext_bytes: Vec<u8> = BASE64_STANDARD.decode(ciphertext_text)?;
+    if ciphertext_bytes.len() % 16 != 0 {
+        ciphertext_bytes.append(vec![0u8; 16 - (ciphertext_bytes.len() % 16)].as_mut());
+    }
     let ciphertext_chunks: Vec<FieldElement> = ciphertext_bytes
         .chunks(16)
         .into_iter()
