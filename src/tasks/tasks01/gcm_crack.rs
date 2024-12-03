@@ -35,9 +35,12 @@ struct Message {
 fn parse_message(val: &Value) -> Result<(Message, Polynomial)> {
     let ciphertext_text: String = serde_json::from_value(val["ciphertext"].clone())?;
     let mut ciphertext_bytes: Vec<u8> = BASE64_STANDARD.decode(ciphertext_text)?;
+    let mut c_len: Vec<u8> = ((ciphertext_bytes.len() * 8) as u64).to_be_bytes().to_vec();
+
     if ciphertext_bytes.len() % 16 != 0 {
         ciphertext_bytes.append(vec![0u8; 16 - (ciphertext_bytes.len() % 16)].as_mut());
     }
+
     let ciphertext_chunks: Vec<FieldElement> = ciphertext_bytes
         .chunks(16)
         .into_iter()
@@ -61,7 +64,6 @@ fn parse_message(val: &Value) -> Result<(Message, Polynomial)> {
     let tag_bytes: Vec<u8> = BASE64_STANDARD.decode(tag_text)?;
     let tag_field: FieldElement = FieldElement::new(tag_bytes.clone());
 
-    let mut c_len: Vec<u8> = ((ciphertext_bytes.len() * 8) as u64).to_be_bytes().to_vec();
     l_field.append(c_len.as_mut());
 
     // Combine all data
