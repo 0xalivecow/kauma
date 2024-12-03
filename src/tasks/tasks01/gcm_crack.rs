@@ -35,13 +35,11 @@ struct Message {
 fn parse_message(val: &Value) -> Result<(Message, Polynomial)> {
     let ciphertext_text: String = serde_json::from_value(val["ciphertext"].clone())?;
     let ciphertext_bytes: Vec<u8> = BASE64_STANDARD.decode(ciphertext_text)?;
-    let mut ciphertext_chunks: Vec<FieldElement> = ciphertext_bytes
+    let ciphertext_chunks: Vec<FieldElement> = ciphertext_bytes
         .chunks(16)
         .into_iter()
         .map(|chunk| FieldElement::new(chunk.to_vec()))
         .collect();
-    //ciphertext_chunks;
-    let ciphertext: Polynomial = Polynomial::new(ciphertext_chunks.clone());
 
     let ad_text: String = serde_json::from_value(val["associated_data"].clone())?;
     let mut ad_bytes: Vec<u8> = BASE64_STANDARD.decode(ad_text)?;
@@ -50,18 +48,15 @@ fn parse_message(val: &Value) -> Result<(Message, Polynomial)> {
     if ad_bytes.len() % 16 != 0 || ad_bytes.is_empty() {
         ad_bytes.append(vec![0u8; 16 - (ad_bytes.len() % 16)].as_mut());
     }
-    let mut ad_chunks: Vec<FieldElement> = ad_bytes
+    let ad_chunks: Vec<FieldElement> = ad_bytes
         .chunks(16)
         .into_iter()
         .map(|chunk| FieldElement::new(chunk.to_vec()))
         .collect();
-    //ad_chunks;
-    let ad: Polynomial = Polynomial::new(ad_chunks.clone());
 
     let tag_text: String = serde_json::from_value(val["tag"].clone()).unwrap_or("".to_string());
     let tag_bytes: Vec<u8> = BASE64_STANDARD.decode(tag_text)?;
     let tag_field: FieldElement = FieldElement::new(tag_bytes.clone());
-    let tag: Polynomial = Polynomial::new(vec![tag_field.clone()]);
 
     let mut c_len: Vec<u8> = ((ciphertext_bytes.len() * 8) as u64).to_be_bytes().to_vec();
     l_field.append(c_len.as_mut());
@@ -90,16 +85,12 @@ fn parse_message(val: &Value) -> Result<(Message, Polynomial)> {
 }
 
 pub fn gcm_crack(args: &Value) -> Result<CrackAnswer> {
-    let nonce: String = serde_json::from_value(args["nonce"].clone())?;
-
-    let crack_poly: Polynomial = Polynomial::empty();
-
     // Prepare first equation
     let (m1_data, m1_h_poly) = parse_message(&args["m1"])?;
 
-    let (m2_data, m2_h_poly) = parse_message(&args["m2"])?;
+    let (_, m2_h_poly) = parse_message(&args["m2"])?;
 
-    let (m3_data, m3_h_poly) = parse_message(&args["m3"])?;
+    let (m3_data, _) = parse_message(&args["m3"])?;
 
     eprintln!("m1 poly: {:?}", m1_h_poly.clone().to_c_array());
     eprintln!("m2 poly: {:?}", m2_h_poly.clone().to_c_array());
