@@ -6,6 +6,7 @@ use crate::utils::parse::{Responses, Testcase, Testcases};
 use tasks01::{
     block2poly::block2poly,
     gcm::{gcm_decrypt, gcm_encrypt},
+    gcm_crack::gcm_crack,
     gfmul::gfmul_task,
     pad_oracle::padding_oracle,
     pfmath::{
@@ -176,6 +177,12 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
 
             Ok(json)
         }
+        "gcm_crack" => {
+            let result = gcm_crack(args)?;
+            let json = json!({"factors" : result});
+
+            Ok(json)
+        }
 
         _ => Err(anyhow!(
             "Fatal. No compatible action found. Json data was {:?}. Arguments were; {:?}",
@@ -234,7 +241,7 @@ pub fn task_distribute_st(testcases: &Testcases) -> Result<Responses> {
 
 pub fn task_distribute(testcases: &Testcases) -> Result<Responses> {
     let cpus = num_cpus::get();
-    if cpus > 1 {
+    if cpus > 1000000 {
         task_distribute_mt(testcases)
     } else {
         task_distribute_st(testcases)

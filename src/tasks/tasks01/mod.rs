@@ -1,5 +1,6 @@
 pub mod block2poly;
 pub mod gcm;
+pub mod gcm_crack;
 pub mod gfmul;
 pub mod pad_oracle;
 pub mod pfmath;

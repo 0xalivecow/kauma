@@ -25,20 +25,14 @@ pub fn ddf(f: Polynomial) -> Vec<(Polynomial, u128)> {
 
         let g = gcd(&h, &f_star);
         if g != one_cmp {
-            eprintln!("d is: {}", d);
-            eprintln!("g is: {:?}", &g.clone().to_c_array());
-
             z.push((g.clone(), d));
             f_star = f_star.div(&g).0;
         }
-        eprintln!("d outer is: {}", d);
-        eprintln!("F star degree is {:?}", &f_star.degree());
 
         d += 1;
     }
 
     if f_star != one_cmp {
-        eprintln!("fstar not one");
         z.push((f_star.clone(), f_star.degree() as u128));
     } else if z.len() == 0 {
         z.push((f.clone(), 1));

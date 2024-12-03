@@ -39,6 +39,18 @@ impl FieldElement {
         FieldElement::new_no_convert(vec![0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
 
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.field_element.clone()
+    }
+
+    /*
+    pub fn padd(&mut self) {
+        if self.field_element.len() % 16 != 0 || ad.is_empty() {
+            ad.append(vec![0u8; 16 - (ad.len() % 16)].as_mut());
+        }
+    }
+    */
+
     pub fn new(field_element: Vec<u8>) -> Self {
         Self {
             field_element: reverse_bits_in_bytevec(field_element),

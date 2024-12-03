@@ -1,7 +1,7 @@
 use crate::utils::field::ByteArray;
 use base64::prelude::*;
 
-use num::traits::FromBytes;
+use num::traits::{FromBytes, ToBytes};
 use num::{BigInt, BigUint, One, Zero};
 
 use std::{str::FromStr, u128, u8, usize};
@@ -29,6 +29,10 @@ impl Polynomial {
 
     pub fn degree(&self) -> usize {
         self.polynomial.len() - 1
+    }
+
+    pub fn empty() -> Polynomial {
+        Polynomial::new(vec![])
     }
 
     pub fn one() -> Self {
@@ -372,6 +376,10 @@ impl Polynomial {
         }
 
         self
+    }
+
+    pub fn extract_component(&self, i: u32) -> FieldElement {
+        self.polynomial[i as usize].clone()
     }
 }
 
