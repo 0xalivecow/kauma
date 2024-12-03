@@ -180,6 +180,10 @@ pub fn gcm_crack(args: &Value) -> Result<CrackAnswer> {
 
     let forgery_auth_tag = xor_bytes(&eky0, forgery_ghash).unwrap();
 
+    if eky0.is_empty() {
+        eky0 = vec![0; 16];
+    }
+
     Ok(CrackAnswer {
         tag: BASE64_STANDARD.encode(forgery_auth_tag),
         H: h_candidate.to_b64(),
