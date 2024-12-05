@@ -98,12 +98,7 @@ pub fn gcm_crack(args: &Value) -> Result<CrackAnswer> {
 
     let (m3_data, _) = parse_message(&args["m3"])?;
 
-    eprintln!("m1 poly: {:?}", m1_h_poly.clone().to_c_array());
-    eprintln!("m2 poly: {:?}", m2_h_poly.clone().to_c_array());
-
     let combine_poly = m1_h_poly + m2_h_poly;
-
-    eprintln!("combine poly: {:?}", combine_poly.clone().to_c_array());
 
     let combine_sff = sff(combine_poly.monic());
 
@@ -112,16 +107,12 @@ pub fn gcm_crack(args: &Value) -> Result<CrackAnswer> {
         combine_ddf.extend(ddf(factor));
     }
 
-    eprintln!("combine_ddf: {:?}", combine_ddf);
-
     let mut combine_edf: Vec<Polynomial> = vec![];
     for (factor, degree) in combine_ddf {
         if degree == 1 {
             combine_edf.extend(edf(factor, degree as u32));
         }
     }
-
-    eprintln!("combine_edf: {:?}", combine_edf);
 
     let mut m3_auth_tag: Vec<u8> = vec![];
     let mut h_candidate: FieldElement = FieldElement::zero();
@@ -155,23 +146,11 @@ pub fn gcm_crack(args: &Value) -> Result<CrackAnswer> {
             );
 
             if m3_auth_tag == m3_data.tag {
-                eprintln!("Candidate valid");
-                eprintln!("{:02X?}", m3_auth_tag);
                 break;
             } else {
                 eprintln!("H candidate not valid");
             }
         }
-    }
-
-    eprintln!(
-        "M3 Authentication TAG {:02X?}",
-        BASE64_STANDARD.encode(&m3_auth_tag)
-    );
-
-    if m3_auth_tag.is_empty() {
-        assert!(false);
-        eprintln!("No valid candidate found");
     }
 
     let (forgery_data, _) = parse_message(&args["forgery"])?;
@@ -195,63 +174,4 @@ pub fn gcm_crack(args: &Value) -> Result<CrackAnswer> {
         H: h_candidate.to_b64(),
         mask: BASE64_STANDARD.encode(eky0),
     })
-}
-
-#[cfg(test)]
-mod tests {
-
-    use anyhow::Result;
-
-    use rand::Rng;
-
-    use serde_json::json;
-    use utils::ciphers::{aes_128_encrypt, gcm_encrypt_aes};
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
-    use super::*;
-
-    #[test]
-    fn test_random() -> Result<()> {
-        let key = vec![1, 1, 1, 1];
-        let nonce = BASE64_STANDARD.decode("4gF+BtR3ku/PUQci")?;
-        let ad = vec![0];
-
-        let input: Vec<u8> = Vec::with_capacity(rand::thread_rng().gen_range(0..=60));
-        let plain1 = gcm_encrypt_aes(nonce.clone(), key.clone(), input, ad.clone())?;
-        let input: Vec<u8> = Vec::with_capacity(rand::thread_rng().gen_range(0..=60));
-        let plain2 = gcm_encrypt_aes(nonce.clone(), key.clone(), input, ad.clone())?;
-        let input: Vec<u8> = Vec::with_capacity(rand::thread_rng().gen_range(0..=60));
-        let plain3 = gcm_encrypt_aes(nonce.clone(), key.clone(), input, ad.clone())?;
-
-        let crack_input = json!({
-          "testcases": {
-            "gcm_crack46": {
-              "action": "gcm_crack",
-              "arguments": {
-                "nonce": "4gF+BtR3ku/PUQci",
-                "m1": {
-                  "ciphertext": BASE64_STANDARD.encode(plain1.0),
-                  "associated_data": "",
-                  "tag": BASE64_STANDARD.encode(plain1.1)
-                },
-                "m2": {
-                  "ciphertext": BASE64_STANDARD.encode(plain2.0),
-                  "associated_data": "",
-                  "tag": BASE64_STANDARD.encode(plain2.1)
-                },
-                "m3": {
-                  "ciphertext": BASE64_STANDARD.encode(plain3.0),
-                  "associated_data": "",
-                  "tag": BASE64_STANDARD.encode(plain3.1)
-                },
-                "forgery": {
-                  "ciphertext": "AXe/ZQ==",
-                  "associated_data": ""
-                }
-              }
-            }
-          }
-        });
-
-        todo!();
-    }
 }
