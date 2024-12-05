@@ -179,7 +179,7 @@ pub fn task_deploy(testcase: &Testcase) -> Result<Value> {
         }
         "gcm_crack" => {
             let result = gcm_crack(args)?;
-            let json = json!({"factors" : result});
+            let json = json!(result);
 
             Ok(json)
         }

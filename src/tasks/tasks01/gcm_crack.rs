@@ -54,6 +54,7 @@ fn parse_message(val: &Value) -> Result<(Message, Polynomial)> {
     if ad_bytes.len() % 16 != 0 || ad_bytes.is_empty() {
         ad_bytes.append(vec![0u8; 16 - (ad_bytes.len() % 16)].as_mut());
     }
+
     let ad_chunks: Vec<FieldElement> = ad_bytes
         .chunks(16)
         .into_iter()
@@ -128,7 +129,6 @@ pub fn gcm_crack(args: &Value) -> Result<CrackAnswer> {
     for candidate in combine_edf {
         if candidate.degree() == 1 {
             h_candidate = candidate.extract_component(0);
-            eprintln!("H candidate: {:02X?}", h_candidate.to_b64());
             let m1_ghash = ghash(
                 reverse_bits_in_bytevec(h_candidate.to_vec()),
                 m1_data.ad.clone(),
@@ -170,6 +170,7 @@ pub fn gcm_crack(args: &Value) -> Result<CrackAnswer> {
     );
 
     if m3_auth_tag.is_empty() {
+        assert!(false);
         eprintln!("No valid candidate found");
     }
 
@@ -194,4 +195,63 @@ pub fn gcm_crack(args: &Value) -> Result<CrackAnswer> {
         H: h_candidate.to_b64(),
         mask: BASE64_STANDARD.encode(eky0),
     })
+}
+
+#[cfg(test)]
+mod tests {
+
+    use anyhow::Result;
+
+    use rand::Rng;
+
+    use serde_json::json;
+    use utils::ciphers::{aes_128_encrypt, gcm_encrypt_aes};
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn test_random() -> Result<()> {
+        let key = vec![1, 1, 1, 1];
+        let nonce = BASE64_STANDARD.decode("4gF+BtR3ku/PUQci")?;
+        let ad = vec![0];
+
+        let input: Vec<u8> = Vec::with_capacity(rand::thread_rng().gen_range(0..=60));
+        let plain1 = gcm_encrypt_aes(nonce.clone(), key.clone(), input, ad.clone())?;
+        let input: Vec<u8> = Vec::with_capacity(rand::thread_rng().gen_range(0..=60));
+        let plain2 = gcm_encrypt_aes(nonce.clone(), key.clone(), input, ad.clone())?;
+        let input: Vec<u8> = Vec::with_capacity(rand::thread_rng().gen_range(0..=60));
+        let plain3 = gcm_encrypt_aes(nonce.clone(), key.clone(), input, ad.clone())?;
+
+        let crack_input = json!({
+          "testcases": {
+            "gcm_crack46": {
+              "action": "gcm_crack",
+              "arguments": {
+                "nonce": "4gF+BtR3ku/PUQci",
+                "m1": {
+                  "ciphertext": BASE64_STANDARD.encode(plain1.0),
+                  "associated_data": "",
+                  "tag": BASE64_STANDARD.encode(plain1.1)
+                },
+                "m2": {
+                  "ciphertext": BASE64_STANDARD.encode(plain2.0),
+                  "associated_data": "",
+                  "tag": BASE64_STANDARD.encode(plain2.1)
+                },
+                "m3": {
+                  "ciphertext": BASE64_STANDARD.encode(plain3.0),
+                  "associated_data": "",
+                  "tag": BASE64_STANDARD.encode(plain3.1)
+                },
+                "forgery": {
+                  "ciphertext": "AXe/ZQ==",
+                  "associated_data": ""
+                }
+              }
+            }
+          }
+        });
+
+        todo!();
+    }
 }
