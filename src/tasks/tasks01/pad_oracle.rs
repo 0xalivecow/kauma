@@ -29,6 +29,7 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
 
     for chunk in &cipher_chunks {
         let mut stream = TcpStream::connect(format!("{}:{}", hostname, port))?;
+        stream.set_nodelay(true).expect("Error on no delay");
         stream.set_nonblocking(false)?;
 
         // Track value sent to server
