@@ -57,7 +57,8 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
 
             // Generate attack blocks
             //  TODO: Collect all and send in one
-            let mut payload: Vec<u8> = l_msg.to_vec();
+            let mut payload: Vec<u8> = Vec::with_capacity(2 + 16 * 265);
+            payload.extend(l_msg.to_vec());
             for j in 0..q_block_count {
                 // Next byte
                 //eprintln!("Sending attack block: {:02X?}", attack_counter);
