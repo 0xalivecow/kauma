@@ -1,6 +1,5 @@
 use crate::utils::{field::ByteArray, poly::gfmul};
 use anyhow::Result;
-use base64::prelude::*;
 use openssl::symm::{Cipher, Crypter, Mode};
 
 use super::math::xor_bytes;

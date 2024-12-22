@@ -2,7 +2,7 @@ use crate::utils::field::ByteArray;
 use base64::prelude::*;
 
 use num::traits::{FromBytes, ToBytes};
-use num::{BigInt, BigUint, One, Zero};
+use num::{BigUint, One, Zero};
 
 use std::{str::FromStr, u128, u8, usize};
 
@@ -15,7 +15,6 @@ use anyhow::{anyhow, Ok, Result};
 use serde_json::Value;
 
 use super::field::FieldElement;
-use super::math::reverse_bits_in_bytevec;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Polynomial {
@@ -574,7 +573,7 @@ pub fn sort_polynomial_array(mut polys: Vec<Polynomial>) -> Result<Vec<Polynomia
 pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
 pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
-    let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
+    let red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
     //red_poly_bytes.0.push(0x01);
 
     let mut poly1: ByteArray = ByteArray(poly_a.to_vec());

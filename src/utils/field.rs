@@ -8,9 +8,7 @@ use std::{
 
 use anyhow::{anyhow, Ok, Result};
 
-use crate::utils::poly::bgfmul;
 
-use super::poly::polynomial_2_block;
 use super::{
     math::{reverse_bits_in_bytevec, xor_bytes},
     poly::gfmul,
