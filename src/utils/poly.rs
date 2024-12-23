@@ -1,21 +1,20 @@
 use crate::utils::field::ByteArray;
 use base64::prelude::*;
 
-use num::traits::{FromBytes, ToBytes};
-use num::{BigInt, BigUint, One, Zero};
+use num::traits::FromBytes;
+use num::{BigUint, One, Zero};
 
 use std::{str::FromStr, u128, u8, usize};
 
 use std::{
     cmp::Ordering,
-    ops::{Add, Div, Mul},
+    ops::{Add, Mul},
 };
 
 use anyhow::{anyhow, Ok, Result};
 use serde_json::Value;
 
 use super::field::FieldElement;
-use super::math::reverse_bits_in_bytevec;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Polynomial {
@@ -108,26 +107,17 @@ impl Polynomial {
             return result;
         }
 
-        //eprintln!("Initial result: {:?}", result);
         while exponent > 0 {
-            //eprintln!("Current exponent: {:02X}", exponent);
             if exponent & 1 == 1 {
                 let temp = &self * &result;
-                //eprintln!("Mult");
-                //eprintln!("After mod: {:?}", temp);
 
                 result = temp
             }
             let temp_square = &self * &self;
-            //eprintln!("Square");
 
-            //eprintln!("After squaring: {:?}", temp_square);
             self = temp_square;
-            //eprintln!("After mod: {:?}", self);
             exponent >>= 1;
         }
-
-        //eprintln!("result in powmod before reduction: {:02X?}", result);
 
         while !result.polynomial.is_empty()
             && result
@@ -140,8 +130,6 @@ impl Polynomial {
         {
             result.polynomial.pop();
         }
-
-        //eprintln!("result in powmod after reduction: {:02X?}", result);
 
         if result.is_empty() {
             result = Polynomial::zero();
@@ -167,19 +155,13 @@ impl Polynomial {
             return result;
         }
 
-        //eprintln!("Initial result: {:?}", result);
         while &exponent > &BigUint::zero() {
-            //eprintln!("Current exponent: {:02X}", exponent);
             if &exponent & BigUint::one() == BigUint::one() {
                 let temp = &self * &result;
-                //eprintln!("After multiplication: {:?}", temp);
                 result = temp.div(&modulus).1;
-                //eprintln!("After mod: {:?}", result);
             }
             let temp_square = &self * &self;
-            //eprintln!("After squaring: {:?}", temp_square);
             self = temp_square.div(&modulus).1;
-            //eprintln!("After mod: {:?}", self);
             exponent >>= 1;
         }
 
@@ -216,19 +198,13 @@ impl Polynomial {
             return result;
         }
 
-        //eprintln!("Initial result: {:?}", result);
         while exponent > 0 {
-            //eprintln!("Current exponent: {:02X}", exponent);
             if exponent & 1 == 1 {
                 let temp = &self * &result;
-                //eprintln!("After multiplication: {:?}", temp);
                 result = temp.div(&modulus).1;
-                //eprintln!("After mod: {:?}", result);
             }
             let temp_square = &self * &self;
-            //eprintln!("After squaring: {:?}", temp_square);
             self = temp_square.div(&modulus).1;
-            //eprintln!("After mod: {:?}", self);
             exponent >>= 1;
         }
 
@@ -574,14 +550,11 @@ pub fn sort_polynomial_array(mut polys: Vec<Polynomial>) -> Result<Vec<Polynomia
 pub const RED_POLY: u128 = 0x87000000_00000000_00000000_00000000;
 
 pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
-    let mut red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
-    //red_poly_bytes.0.push(0x01);
+    let red_poly_bytes: ByteArray = ByteArray(RED_POLY.to_be_bytes().to_vec());
 
     let mut poly1: ByteArray = ByteArray(poly_a.to_vec());
-    //poly1.0.push(0x00);
 
     let mut poly2: ByteArray = ByteArray(poly_b.to_vec());
-    //poly2.0.push(0x00);
 
     if semantic == "gcm" {
         poly1.reverse_bits_in_bytevec();
@@ -618,53 +591,6 @@ pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u
     Ok(result.0)
 }
 
-pub fn bgfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
-    //TODO: Implement gfmul with bigint
-    let red_poly_bytes: BigUint = BigUint::from_slice(&[
-        0x87, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01,
-    ]);
-
-    let mut poly1: BigUint = BigUint::from_le_bytes(poly_a);
-
-    let mut poly2: BigUint = BigUint::from_le_bytes(poly_b);
-
-    /*
-    if semantic == "gcm" {
-        poly1.re;
-        poly2.reverse_bits_in_bytevec();
-    }
-    */
-
-    let mut result: BigUint = BigUint::zero();
-
-    if (&poly2 & (BigUint::one() << 127)) == BigUint::one() {
-        result = &result ^ &poly1;
-    }
-    poly2 = &poly2 >> 1;
-
-    while &poly2 != &BigUint::zero() {
-        poly1 = &poly1 << 1;
-
-        if (&poly1 & (BigUint::one() << 127)) == BigUint::one() {
-            poly1 = &poly1 ^ &red_poly_bytes;
-        }
-
-        if &poly2 & BigUint::one() == BigUint::one() {
-            result = &result ^ &poly1;
-        }
-
-        poly2 = &poly2 >> 1;
-    }
-
-    /*
-        if semantic == "gcm" {
-            result.reverse_bits_in_bytevec();
-        }
-    */
-
-    Ok(result.to_bytes_le())
-}
-
 pub fn convert_gcm_to_xex(gcm_poly: Vec<u8>) -> Result<Vec<u8>> {
     let xex_poly = gcm_poly
         .into_iter()
@@ -676,8 +602,6 @@ pub fn convert_gcm_to_xex(gcm_poly: Vec<u8>) -> Result<Vec<u8>> {
 
 pub fn get_alpha_rep(num: u128) -> String {
     let powers: Vec<u8> = get_coefficients(num);
-
-    //println!("{:?}", powers);
 
     let mut alpha_rep = String::new();
 
@@ -705,7 +629,6 @@ pub fn b64_2_num(string: &String) -> Result<u128> {
 pub fn get_coefficients(num: u128) -> Vec<u8> {
     let mut powers: Vec<u8> = vec![];
     for shift in 0..128 {
-        //println!("{:?}", ((num >> shift) & 1));
         if ((num >> shift) & 1) == 1 {
             powers.push(shift);
         }
@@ -832,7 +755,7 @@ mod tests {
     #[test]
     fn coeff_to_binary() {
         let coefficients: Vec<u8> = vec![12, 127, 9, 0];
-        let b64: &str = "ARIAAAAAAAAAAAAAAAAAgA==";
+        let _b64: &str = "ARIAAAAAAAAAAAAAAAAAgA==";
         let calculated_num: u128 = coefficient_to_binary(coefficients);
         assert_eq!(
             BASE64_STANDARD.encode(calculated_num.to_ne_bytes()),

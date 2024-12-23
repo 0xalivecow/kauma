@@ -40,7 +40,6 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
         let q_block_count: u16 = 256;
 
         //Send the first ciphertext chunk
-        //eprintln!("Sending Ciphertext chunk: {:002X?}", chunk);
         stream.flush()?;
         stream.write_all(&chunk)?;
         stream.flush()?;
@@ -50,25 +49,16 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
             // FIXME: Assignment is redundant for now
             // TODO: Goal is to maybe add speed increase in the future
             let l_msg: [u8; 2] = q_block_count.to_le_bytes();
-            //eprintln!("Sending l_msg: {:02X?}", l_msg);
-            //stream.write_all(&l_msg)?;
-            //stream.flush()?;
-            //eprintln!("L_msg sent");
 
             // Generate attack blocks
             //  TODO: Collect all and send in one
             let mut payload: Vec<u8> = Vec::with_capacity(2 + 16 * 265);
             payload.extend(l_msg.to_vec());
-            for j in 0..q_block_count {
+            for _j in 0..q_block_count {
                 // Next byte
-                //eprintln!("Sending attack block: {:02X?}", attack_counter);
-
-                //thread::sleep(Duration::from_millis(1000));
                 payload.extend(&attack_counter);
-                //eprintln!("I in q builder {}", i);
                 attack_counter[i as usize] += 1;
             }
-            //eprintln!("Time for qblocks: {:?}", start.elapsed());
 
             stream.write_all(&payload)?;
             stream.flush()?;
@@ -76,7 +66,6 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
             // Read server response
             let mut server_q_resp = [0u8; 256];
             stream.read_exact(&mut server_q_resp)?;
-            //eprintln!("{:02X?}", buf);
 
             // extract valid position
             let valid_val = server_q_resp
@@ -86,7 +75,6 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
             if valid_val == 0x00 {
                 eprintln!("No valid found in main loop");
             }
-            //eprintln!("Valid value found: {:02X?}", valid_val);
             // Craft next attack vector padding; 0x01, 0x02, ...
             attack_counter[i as usize] = valid_val;
 
@@ -100,15 +88,10 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
                 l_msg_check.extend(check_q_block.as_slice());
 
                 stream.write_all(&l_msg_check)?;
-                //stream.write_all(&check_q_block)?;
                 let mut buf = [0u8; 0x01];
                 stream.read(&mut buf)?;
-                //eprintln!("I = {}", i);
-                //eprintln!("Buffer from pad check: {:02X?}", buf);
                 if buf == [0x01] {
-                    //eprintln!("Valid padding");
                 } else {
-                    //eprintln!("Invalid padding");
                     // Search for second hit
                     let valid_val = 255
                         - server_q_resp
@@ -119,38 +102,21 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
                     if valid_val == 0x00 {
                         eprintln!("No valid found");
                     }
-                    //eprintln!("Valid value found: {:02X?}", valid_val);
                     // Craft next attack vector padding; 0x01, 0x02, ...
                     attack_counter[i as usize] = valid_val;
                 }
             }
 
             if chunk_counter + 1 < cipher_chunks.len() {
-                //eprintln!("XOR Next Ciph block");
                 plaintext.push(
                     cipher_chunks[chunk_counter + 1][i]
                         ^ (attack_counter[i as usize] ^ (15 - i as u8 + 1)),
                 );
             } else {
-                //seprintln!("XOR IV");
-
                 plaintext.push(iv[i] ^ (attack_counter[i as usize] ^ (15 - i as u8 + 1)));
             }
-            //eprintln!("Attack counter after set: {:02X?}", attack_counter);
             let range = i;
             for pos in range..=15 {
-                //eprintln!("i is: {:02X?}", i);
-                //eprintln!("i + 1 is: {:02X?}", ((16 - i) as u8).to_le());
-                /*
-                eprintln!(
-                    "attack_counter[pos as usize]: {:02X?}",
-                    attack_counter[pos as usize]
-                );
-                eprintln!(
-                    "attack_counter[pos as usize] ^ 0x02 {:02X?}",
-                    attack_counter[pos as usize] ^ (15 - i as u8 + 1)
-                );
-                */
                 let intermediate = attack_counter[pos as usize] ^ (15 - i as u8 + 1);
 
                 attack_counter[pos as usize] = intermediate ^ ((15 - i as u8 + 1) + 1);
@@ -159,13 +125,10 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
             stream.flush()?;
 
             // Write plaintext
-            //eprintln!("{:02X?}", plaintext);
         }
         chunk_counter += 1;
         stream.flush()?;
-        // break;
         drop(stream);
-        //eprintln!("Time rest of calc: {:?}", start.elapsed());
     }
 
     plaintext.reverse();
@@ -177,7 +140,6 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
 
     #[test]
     fn test_connection() -> Result<()> {

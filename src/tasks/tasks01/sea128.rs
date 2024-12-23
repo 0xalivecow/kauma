@@ -6,18 +6,13 @@ use crate::utils::ciphers::{sea_128_decrypt, sea_128_encrypt};
 
 pub fn sea128(args: &Value) -> Result<String> {
     let key_string: String = serde_json::from_value(args["key"].clone())?;
-    //let key: &[u8] = b64_2_num(key_string)?.to_ne_bytes();
     let key = BASE64_STANDARD.decode(key_string)?;
-    //eprintln!("{:?}", key);
     let input_string: String = serde_json::from_value(args["input"].clone())?;
-    //let plaintexts: &[u8] = &b64_2_num(plaintexts_string)?.to_ne_bytes();
     let input = BASE64_STANDARD.decode(input_string)?;
 
     let mode: String = serde_json::from_value(args["mode"].clone())?;
     match mode.as_str() {
         "encrypt" => {
-            //eprintln!("{:?}", plaintexts);
-
             let output = BASE64_STANDARD.encode(sea_128_encrypt(&key, &input)?);
 
             Ok(output)

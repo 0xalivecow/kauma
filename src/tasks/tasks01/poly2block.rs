@@ -1,4 +1,4 @@
-use crate::utils::poly::{polynomial_2_block};
+use crate::utils::poly::polynomial_2_block;
 use anyhow::{Ok, Result};
 use serde_json::Value;
 

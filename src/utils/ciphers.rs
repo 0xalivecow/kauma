@@ -1,6 +1,5 @@
 use crate::utils::{field::ByteArray, poly::gfmul};
 use anyhow::Result;
-use base64::prelude::*;
 use openssl::symm::{Cipher, Crypter, Mode};
 
 use super::math::xor_bytes;
@@ -162,7 +161,6 @@ pub fn gcm_decrypt_aes(
 
     let mut counter: u32 = 1;
     nonce.append(counter.to_be_bytes().to_vec().as_mut());
-    //nonce.append(0u8.to_le_bytes().to_vec().as_mut());
 
     let auth_tag_xor = aes_128_encrypt(&key, &nonce)?;
 
@@ -251,7 +249,6 @@ pub fn gcm_decrypt_sea(
 
     let mut counter: u32 = 1;
     nonce.append(counter.to_be_bytes().to_vec().as_mut());
-    //nonce.append(0u8.to_le_bytes().to_vec().as_mut());
 
     let auth_tag_xor = sea_128_encrypt(&key, &nonce)?;
 
@@ -324,13 +321,6 @@ pub fn ghash(
 
     Ok(inter_loop)
 }
-
-/*
-* let mut bytes: [u8; 16] = [0u8; 16];
-    bytes.copy_from_slice(&ciphertext);
-    let number: u128 = <u128>::from_be_bytes(bytes);
-
-* */
 
 #[cfg(test)]
 mod tests {
