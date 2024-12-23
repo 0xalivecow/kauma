@@ -75,7 +75,7 @@ mod tests {
         }
 
         println!("Result: {:?}", result);
-        let bit_indices: Vec<u8> = vec![0];
+        let _bit_indices: Vec<u8> = vec![0];
         assert!(false)
     }
 }

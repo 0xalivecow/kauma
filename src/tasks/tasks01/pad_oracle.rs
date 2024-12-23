@@ -54,7 +54,7 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
             //  TODO: Collect all and send in one
             let mut payload: Vec<u8> = Vec::with_capacity(2 + 16 * 265);
             payload.extend(l_msg.to_vec());
-            for j in 0..q_block_count {
+            for _j in 0..q_block_count {
                 // Next byte
                 payload.extend(&attack_counter);
                 attack_counter[i as usize] += 1;
@@ -140,7 +140,6 @@ pub fn padding_oracle(args: &Value) -> Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
 
     #[test]
     fn test_connection() -> Result<()> {

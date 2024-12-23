@@ -788,7 +788,7 @@ mod tests {
     #[test]
     fn coeff_to_binary() {
         let coefficients: Vec<u8> = vec![12, 127, 9, 0];
-        let b64: &str = "ARIAAAAAAAAAAAAAAAAAgA==";
+        let _b64: &str = "ARIAAAAAAAAAAAAAAAAAgA==";
         let calculated_num: u128 = coefficient_to_binary(coefficients);
         assert_eq!(
             BASE64_STANDARD.encode(calculated_num.to_ne_bytes()),
