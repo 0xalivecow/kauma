@@ -591,39 +591,6 @@ pub fn gfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u
     Ok(result.0)
 }
 
-pub fn bgfmul(poly_a: &Vec<u8>, poly_b: &Vec<u8>, semantic: &str) -> Result<Vec<u8>> {
-    let red_poly_bytes: BigUint = BigUint::from_slice(&[
-        0x87, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x01,
-    ]);
-
-    let mut poly1: BigUint = BigUint::from_le_bytes(poly_a);
-
-    let mut poly2: BigUint = BigUint::from_le_bytes(poly_b);
-
-    let mut result: BigUint = BigUint::zero();
-
-    if (&poly2 & (BigUint::one() << 127)) == BigUint::one() {
-        result = &result ^ &poly1;
-    }
-    poly2 = &poly2 >> 1;
-
-    while &poly2 != &BigUint::zero() {
-        poly1 = &poly1 << 1;
-
-        if (&poly1 & (BigUint::one() << 127)) == BigUint::one() {
-            poly1 = &poly1 ^ &red_poly_bytes;
-        }
-
-        if &poly2 & BigUint::one() == BigUint::one() {
-            result = &result ^ &poly1;
-        }
-
-        poly2 = &poly2 >> 1;
-    }
-
-    Ok(result.to_bytes_le())
-}
-
 pub fn convert_gcm_to_xex(gcm_poly: Vec<u8>) -> Result<Vec<u8>> {
     let xex_poly = gcm_poly
         .into_iter()
