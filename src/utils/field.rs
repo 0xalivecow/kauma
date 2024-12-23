@@ -8,7 +8,6 @@ use std::{
 
 use anyhow::{anyhow, Ok, Result};
 
-
 use super::{
     math::{reverse_bits_in_bytevec, xor_bytes},
     poly::gfmul,
@@ -41,14 +40,6 @@ impl FieldElement {
         self.field_element.clone()
     }
 
-    /*
-    pub fn padd(&mut self) {
-        if self.field_element.len() % 16 != 0 || ad.is_empty() {
-            ad.append(vec![0u8; 16 - (ad.len() % 16)].as_mut());
-        }
-    }
-    */
-
     pub fn new(field_element: Vec<u8>) -> Self {
         Self {
             field_element: reverse_bits_in_bytevec(field_element),
@@ -80,28 +71,17 @@ impl FieldElement {
             return result;
         }
 
-        //eprintln!("Initial result: {:?}", result);
         while exponent > 0 {
-            //eprintln!("Current exponent: {:02X}", exponent);
             if exponent & 1 == 1 {
                 let temp = &self * &result;
-                //eprintln!("Mult");
-                //eprintln!("After mod: {:?}", temp);
 
                 result = temp
             }
             let temp_square = &self * &self;
-            // eprintln!("Square");
 
-            // eprintln!("After squaring: {:?}", temp_square);
             self = temp_square;
-            //eprintln!("After mod: {:?}", self);
             exponent >>= 1;
         }
-
-        // eprintln!("result in powmod before reduction: {:02X?}", result);
-
-        // eprintln!("result in powmod after reduction: {:02X?}", result);
 
         result
     }
@@ -111,10 +91,8 @@ impl FieldElement {
 
         let mut inverser = INVERSER_START;
         let mut inverse: Vec<u8> = vec![0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        //eprintln!("Inverse start {:02X?}", inverse);
 
         while inverser > 0 {
-            //eprintln!("{:02X}", inverser);
             if inverser & 1 == 1 {
                 inverse = gfmul(&self.field_element, &inverse, "xex").unwrap();
             }
@@ -122,7 +100,6 @@ impl FieldElement {
             self.field_element = gfmul(&self.field_element, &self.field_element, "xex")
                 .expect("Error in sqrmul sqr");
         }
-        //eprintln!("Inverse rhs {:?}", inverse);
         FieldElement::new_no_convert(inverse)
     }
 

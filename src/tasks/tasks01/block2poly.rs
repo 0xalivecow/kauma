@@ -19,7 +19,6 @@ pub fn block2poly(val: &Value) -> Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use std::str::FromStr;
 
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
